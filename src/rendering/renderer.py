@@ -43,8 +43,8 @@ class Renderer:
         print("[DEBUG] Renderer.__init__: Quad VAO created")
         
         # Create a white 1x1 texture for solid color rendering
-        white_pixel = np.array([255, 255, 255, 255], dtype='u1')
-        self.white_texture = ctx.texture((1, 1), 4, white_pixel.tobytes())
+        WHITE_PIXEL = np.array([255, 255, 255, 255], dtype='u1')
+        self.white_texture = ctx.texture((1, 1), 4, WHITE_PIXEL.tobytes())
         print("[DEBUG] Renderer.__init__: White texture created")
         
         # Create framebuffer for scene rendering
