@@ -11,10 +11,12 @@ class PostProcessor:
     """Handles post-processing effects like bloom"""
     
     def __init__(self, ctx: moderngl.Context, shader_manager: ShaderManager):
+        print("[DEBUG] PostProcessor.__init__: Initializing post processor...")
         self.ctx = ctx
         self.shader_manager = shader_manager
         
         # Load shaders
+        print("[DEBUG] PostProcessor.__init__: Loading bloom shaders...")
         self.bloom_extract_program = shader_manager.load_shader(
             'bloom_extract', 'basic.vert', 'bloom_extract.frag'
         )
@@ -24,6 +26,11 @@ class PostProcessor:
         self.bloom_combine_program = shader_manager.load_shader(
             'bloom_combine', 'basic.vert', 'bloom_combine.frag'
         )
+        
+        if all([self.bloom_extract_program, self.bloom_blur_program, self.bloom_combine_program]):
+            print("[DEBUG] PostProcessor.__init__: All bloom shaders loaded successfully")
+        else:
+            print("[WARNING] PostProcessor.__init__: Some bloom shaders failed to load")
         
         # Create fullscreen quad
         vertices = np.array([
@@ -63,11 +70,13 @@ class PostProcessor:
         
         self.final_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.final_fbo = ctx.framebuffer(color_attachments=[self.final_texture])
+        print("[DEBUG] PostProcessor.__init__: Post processor initialization complete!")
     
     def apply_bloom(self, source_texture: moderngl.Texture) -> moderngl.Texture:
         """Apply bloom effect to source texture"""
         # If shaders aren't loaded, return original
         if not all([self.bloom_extract_program, self.bloom_blur_program, self.bloom_combine_program]):
+            print("[WARNING] PostProcessor.apply_bloom: Bloom shaders not loaded, returning original texture")
             return source_texture
         
         # Step 1: Extract bright pixels

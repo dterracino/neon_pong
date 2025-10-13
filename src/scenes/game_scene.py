@@ -20,11 +20,13 @@ class GameScene(Scene):
     """Main game scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager):
+        print("[DEBUG] GameScene.__init__: Creating game scene...")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         
         # Create entities
+        print("[DEBUG] GameScene.__init__: Creating game entities...")
         self.paddle1 = Paddle(PADDLE_OFFSET, WINDOW_HEIGHT // 2 - 50, 1)
         self.paddle2 = Paddle(WINDOW_WIDTH - PADDLE_OFFSET - 15, WINDOW_HEIGHT // 2 - 50, 2)
         self.ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
@@ -42,6 +44,7 @@ class GameScene(Scene):
         
         # Try to start game music
         # self.audio_manager.play_music('game_music.ogg')
+        print(f"[DEBUG] GameScene.__init__: Game scene created (paddle1: {self.paddle1.x},{self.paddle1.y}, ball: {self.ball.x},{self.ball.y})")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:

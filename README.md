@@ -11,6 +11,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎯 Two-player local multiplayer
 - 🤖 AI opponent option
 - 💫 Particle effects and screen shake
+- 🔍 Comprehensive debug logging for troubleshooting
 
 ## Architecture
 
@@ -34,6 +35,12 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+### Troubleshooting
+
+If the game displays a black screen or doesn't start properly, check the console output for debug messages. See [DEBUG_GUIDE.md](DEBUG_GUIDE.md) for detailed troubleshooting instructions.
+
+You can also run `python test_debug_output.py` to see what normal debug output should look like.
 
 ## Controls
 

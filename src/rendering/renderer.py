@@ -14,13 +14,20 @@ class Renderer:
     """Handles all ModernGL rendering"""
     
     def __init__(self, ctx: moderngl.Context, shader_manager: ShaderManager):
+        print("[DEBUG] Renderer.__init__: Initializing renderer...")
         self.ctx = ctx
         self.shader_manager = shader_manager
         
         # Load basic shader
+        print("[DEBUG] Renderer.__init__: Loading basic shader...")
         self.basic_program = shader_manager.load_shader('basic', 'basic.vert', 'basic.frag')
+        if self.basic_program:
+            print(f"[DEBUG] Renderer.__init__: Basic shader loaded successfully")
+        else:
+            print(f"[ERROR] Renderer.__init__: Failed to load basic shader!")
         
         # Create post processor
+        print("[DEBUG] Renderer.__init__: Creating post processor...")
         self.post_processor = PostProcessor(ctx, shader_manager)
         
         # Create vertex buffer for a quad
@@ -33,10 +40,13 @@ class Renderer:
         
         self.quad_vbo = ctx.buffer(vertices.tobytes())
         self.quad_vao = ctx.simple_vertex_array(self.basic_program, self.quad_vbo, 'in_position')  # type: ignore[arg-type]
+        print("[DEBUG] Renderer.__init__: Quad VAO created")
         
         # Create framebuffer for scene rendering
+        print(f"[DEBUG] Renderer.__init__: Creating scene framebuffer ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
         self.scene_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.scene_fbo = ctx.framebuffer(color_attachments=[self.scene_texture])
+        print("[DEBUG] Renderer.__init__: Renderer initialization complete!")
         
     def begin_frame(self):
         """Begin rendering a frame"""
@@ -58,10 +68,13 @@ class Renderer:
         if self.basic_program and 'tex' in self.basic_program:
             self.basic_program['tex'].value = 0
             self.quad_vao.render(moderngl.TRIANGLE_STRIP)
+        else:
+            print("[ERROR] Renderer.end_frame: Cannot render - basic_program not loaded or 'tex' uniform missing!")
     
     def draw_rect(self, x: float, y: float, width: float, height: float, color: Tuple[float, float, float, float]):
         """Draw a filled rectangle"""
         if not self.basic_program:
+            print("[ERROR] Renderer.draw_rect: Cannot draw - basic_program not loaded!")
             return
         
         # Convert screen coordinates to NDC
@@ -96,6 +109,7 @@ class Renderer:
     def draw_circle(self, x: float, y: float, radius: float, color: Tuple[float, float, float, float], segments: int = 32):
         """Draw a filled circle"""
         if not self.basic_program:
+            print("[ERROR] Renderer.draw_circle: Cannot draw - basic_program not loaded!")
             return
         
         # Convert to NDC

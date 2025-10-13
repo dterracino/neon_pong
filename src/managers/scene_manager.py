@@ -44,11 +44,15 @@ class SceneManager:
     
     def push_scene(self, scene: Scene):
         """Push a new scene onto the stack"""
+        print(f"[DEBUG] SceneManager.push_scene: Pushing scene: {type(scene).__name__}")
         if self.current_scene:
+            print(f"[DEBUG] SceneManager.push_scene: Calling on_exit on current scene: {type(self.current_scene).__name__}")
             self.current_scene.on_exit()
         
         self.scenes.append(scene)
+        print(f"[DEBUG] SceneManager.push_scene: Calling on_enter on new scene: {type(scene).__name__}")
         scene.on_enter()
+        print(f"[DEBUG] SceneManager.push_scene: Scene stack size: {len(self.scenes)}")
     
     def pop_scene(self):
         """Pop the current scene"""
@@ -61,6 +65,7 @@ class SceneManager:
     
     def change_scene(self, scene: Scene):
         """Replace current scene with new scene"""
+        print(f"[DEBUG] SceneManager.change_scene: Changing to scene: {type(scene).__name__}")
         if self.scenes:
             self.pop_scene()
         self.push_scene(scene)
