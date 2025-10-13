@@ -42,6 +42,11 @@ class Renderer:
         self.quad_vao = ctx.simple_vertex_array(self.basic_program, self.quad_vbo, 'in_position')  # type: ignore[arg-type]
         print("[DEBUG] Renderer.__init__: Quad VAO created")
         
+        # Create a white 1x1 texture for solid color rendering
+        white_pixel = np.array([255, 255, 255, 255], dtype='u1')
+        self.white_texture = ctx.texture((1, 1), 4, white_pixel.tobytes())
+        print("[DEBUG] Renderer.__init__: White texture created")
+        
         # Create framebuffer for scene rendering
         print(f"[DEBUG] Renderer.__init__: Creating scene framebuffer ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
         self.scene_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
@@ -67,6 +72,9 @@ class Renderer:
         final_texture.use(0)
         if self.basic_program and 'tex' in self.basic_program:
             self.basic_program['tex'].value = 0
+            # Set color to white to render the texture as-is
+            if 'color' in self.basic_program:
+                self.basic_program['color'].value = (1.0, 1.0, 1.0, 1.0)
             self.quad_vao.render(moderngl.TRIANGLE_STRIP)
         else:
             print("[ERROR] Renderer.end_frame: Cannot render - basic_program not loaded or 'tex' uniform missing!")
@@ -95,7 +103,10 @@ class Renderer:
         vbo = self.ctx.buffer(vertices.tobytes())
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
         
-        # Set color uniform
+        # Bind white texture and set color uniform
+        self.white_texture.use(0)
+        if self.basic_program and 'tex' in self.basic_program:
+            self.basic_program['tex'].value = 0  # type: ignore[union-attr]
         if self.basic_program and 'color' in self.basic_program:
             self.basic_program['color'].value = color  # type: ignore[union-attr]
         
@@ -133,7 +144,10 @@ class Renderer:
         vbo = self.ctx.buffer(vertices.tobytes())
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
         
-        # Set color uniform
+        # Bind white texture and set color uniform
+        self.white_texture.use(0)
+        if self.basic_program and 'tex' in self.basic_program:
+            self.basic_program['tex'].value = 0  # type: ignore[union-attr]
         if self.basic_program and 'color' in self.basic_program:
             self.basic_program['color'].value = color  # type: ignore[union-attr]
         
