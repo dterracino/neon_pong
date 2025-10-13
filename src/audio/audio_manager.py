@@ -3,7 +3,6 @@ Audio manager for sound effects and music
 """
 import pygame
 import random
-from typing import Optional
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import MUSIC_VOLUME, SFX_VOLUME
 
@@ -29,12 +28,13 @@ class AudioManager:
         sound = self.sounds.get(sound_name)
         
         if sound:
-            sound.set_volume(self.sfx_volume)
+            volume = self.sfx_volume
             
             # Pitch variation not directly supported in pygame, but we can adjust volume slightly
             if pitch_variation:
-                sound.set_volume(self.sfx_volume * random.uniform(0.8, 1.2))
+                volume = max(0.0, min(1.0, self.sfx_volume * random.uniform(0.8, 1.2)))
             
+            sound.set_volume(volume)
             sound.play()
     
     def play_music(self, filename: str, loops: int = -1):

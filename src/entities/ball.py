@@ -20,10 +20,10 @@ class Ball:
         self.y = y
         self.size = BALL_SIZE
         self.speed = BALL_SPEED_INITIAL
-        self.velocity_x = 0
-        self.velocity_y = 0
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
         self.color = COLOR_YELLOW
-        self.trail_positions = []
+        self.trail_positions: list[tuple[float, float]] = []
         
         self.reset()
     
