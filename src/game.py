@@ -25,7 +25,12 @@ class Game:
         print("[DEBUG] Game.__init__: Initializing pygame...")
         pygame.init()
         print("[DEBUG] Game.__init__: Initializing pygame.mixer...")
-        pygame.mixer.init()
+        try:
+            pygame.mixer.init()
+            print("[DEBUG] Game.__init__: pygame.mixer initialized successfully")
+        except Exception as e:
+            print(f"[WARNING] Game.__init__: Failed to initialize pygame.mixer: {e}")
+            print("[WARNING] Game.__init__: Continuing without audio...")
         
         # Create window with OpenGL context
         print("[DEBUG] Game.__init__: Setting OpenGL attributes...")
