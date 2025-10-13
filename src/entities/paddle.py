@@ -25,7 +25,7 @@ class Paddle:
         self.color = COLOR_CYAN if player_num == 1 else COLOR_PINK
         
         # Hit flash effect
-        self.hit_flash = 0
+        self.hit_flash = 0.0
         
     @property
     def bounds(self) -> AABB:

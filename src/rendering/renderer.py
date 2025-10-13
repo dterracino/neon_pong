@@ -32,7 +32,7 @@ class Renderer:
         ], dtype='f4')
         
         self.quad_vbo = ctx.buffer(vertices.tobytes())
-        self.quad_vao = ctx.simple_vertex_array(self.basic_program, self.quad_vbo, 'in_position')
+        self.quad_vao = ctx.simple_vertex_array(self.basic_program, self.quad_vbo, 'in_position')  # type: ignore[arg-type]
         
         # Create framebuffer for scene rendering
         self.scene_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
@@ -55,7 +55,7 @@ class Renderer:
         
         # Draw final texture to screen
         final_texture.use(0)
-        if self.basic_program:
+        if self.basic_program and 'tex' in self.basic_program:
             self.basic_program['tex'].value = 0
             self.quad_vao.render(moderngl.TRIANGLE_STRIP)
     
@@ -83,7 +83,8 @@ class Renderer:
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
         
         # Set color uniform
-        self.basic_program['color'].value = color
+        if self.basic_program and 'color' in self.basic_program:
+            self.basic_program['color'].value = color  # type: ignore[union-attr]
         
         # Draw
         vao.render(moderngl.TRIANGLE_STRIP)
@@ -104,22 +105,23 @@ class Renderer:
         ndc_radius_y = (radius / WINDOW_HEIGHT) * 2
         
         # Create vertices for circle (triangle fan)
-        vertices = [ndc_x, ndc_y]  # Center point
+        vertices_list = [ndc_x, ndc_y]  # Center point
         
         for i in range(segments + 1):
             angle = (i / segments) * 2 * np.pi
             vx = ndc_x + np.cos(angle) * ndc_radius_x
             vy = ndc_y + np.sin(angle) * ndc_radius_y
-            vertices.extend([vx, vy])
+            vertices_list.extend([vx, vy])
         
-        vertices = np.array(vertices, dtype='f4')
+        vertices = np.array(vertices_list, dtype='f4')
         
         # Create temporary VBO and VAO
         vbo = self.ctx.buffer(vertices.tobytes())
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
         
         # Set color uniform
-        self.basic_program['color'].value = color
+        if self.basic_program and 'color' in self.basic_program:
+            self.basic_program['color'].value = color  # type: ignore[union-attr]
         
         # Draw
         vao.render(moderngl.TRIANGLE_FAN)

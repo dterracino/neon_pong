@@ -74,8 +74,10 @@ class PostProcessor:
         self.bright_fbo.use()
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
         source_texture.use(0)
-        self.bloom_extract_program['tex'].value = 0
-        self.bloom_extract_program['threshold'].value = 0.7
+        if self.bloom_extract_program and 'tex' in self.bloom_extract_program:
+            self.bloom_extract_program['tex'].value = 0  # type: ignore[union-attr]
+        if self.bloom_extract_program and 'threshold' in self.bloom_extract_program:
+            self.bloom_extract_program['threshold'].value = 0.7  # type: ignore[union-attr]
         self.extract_vao.render(moderngl.TRIANGLE_STRIP)
         
         # Step 2: Blur bright pixels (ping-pong between two buffers)
@@ -87,12 +89,15 @@ class PostProcessor:
             current_target_fbo.use()
             self.ctx.clear(0.0, 0.0, 0.0, 1.0)
             current_source.use(0)
-            self.bloom_blur_program['tex'].value = 0
-            self.bloom_blur_program['horizontal'].value = (i % 2 == 0)
-            self.bloom_blur_program['resolution'].value = (
-                current_target_texture.width,
-                current_target_texture.height
-            )
+            if self.bloom_blur_program and 'tex' in self.bloom_blur_program:
+                self.bloom_blur_program['tex'].value = 0  # type: ignore[union-attr]
+            if self.bloom_blur_program and 'horizontal' in self.bloom_blur_program:
+                self.bloom_blur_program['horizontal'].value = (i % 2 == 0)  # type: ignore[union-attr]
+            if self.bloom_blur_program and 'resolution' in self.bloom_blur_program:
+                self.bloom_blur_program['resolution'].value = (  # type: ignore[union-attr]
+                    current_target_texture.width,
+                    current_target_texture.height
+                )
             self.blur_vao.render(moderngl.TRIANGLE_STRIP)
             
             # Swap buffers
@@ -110,9 +115,12 @@ class PostProcessor:
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
         source_texture.use(0)
         current_source.use(1)
-        self.bloom_combine_program['scene'].value = 0
-        self.bloom_combine_program['bloom'].value = 1
-        self.bloom_combine_program['bloom_intensity'].value = 1.5
+        if self.bloom_combine_program and 'scene' in self.bloom_combine_program:
+            self.bloom_combine_program['scene'].value = 0  # type: ignore[union-attr]
+        if self.bloom_combine_program and 'bloom' in self.bloom_combine_program:
+            self.bloom_combine_program['bloom'].value = 1  # type: ignore[union-attr]
+        if self.bloom_combine_program and 'bloom_intensity' in self.bloom_combine_program:
+            self.bloom_combine_program['bloom_intensity'].value = 1.5  # type: ignore[union-attr]
         self.combine_vao.render(moderngl.TRIANGLE_STRIP)
         
         return self.final_texture

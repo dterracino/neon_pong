@@ -3,7 +3,6 @@ Audio manager for sound effects and music
 """
 import pygame
 import random
-from typing import Optional
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import MUSIC_VOLUME, SFX_VOLUME
 
