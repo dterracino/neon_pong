@@ -16,6 +16,7 @@ class MenuScene(Scene):
     """Main menu scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager):
+        print("[DEBUG] MenuScene.__init__: Creating menu scene...")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
@@ -25,6 +26,7 @@ class MenuScene(Scene):
         
         # Try to start menu music
         # self.audio_manager.play_music('menu_music.ogg')
+        print("[DEBUG] MenuScene.__init__: Menu scene created")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -36,10 +38,14 @@ class MenuScene(Scene):
                 self._select_option()
     
     def _select_option(self):
+        print(f"[DEBUG] MenuScene._select_option: Selected option {self.selected_option}")
         if self.selected_option == 0:  # Start Game
+            print("[DEBUG] MenuScene._select_option: Creating game scene...")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager)
+            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 1:  # Quit
+            print("[DEBUG] MenuScene._select_option: Clearing scenes (quit)...")
             self.scene_manager.clear_scenes()
     
     def update(self, dt: float):
