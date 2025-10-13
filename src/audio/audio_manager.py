@@ -32,7 +32,7 @@ class AudioManager:
             
             # Pitch variation not directly supported in pygame, but we can adjust volume slightly
             if pitch_variation:
-                volume = min(1.0, self.sfx_volume * random.uniform(0.8, 1.2))
+                volume = max(0.0, min(1.0, self.sfx_volume * random.uniform(0.8, 1.2)))
             
             sound.set_volume(volume)
             sound.play()
