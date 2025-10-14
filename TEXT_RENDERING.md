@@ -79,12 +79,16 @@ def get_font(self, name: Optional[str] = None, size: int = 32) -> pygame.font.Fo
 
 ### Basic Text
 
+Use for left-aligned text like labels and instructions:
+
 ```python
 # Draw simple text
 renderer.draw_text("Hello World", 100, 200, FONT_SIZE_DEFAULT, COLOR_CYAN)
 ```
 
 ### Centered Text
+
+Use for titles, menu items, and messages that should be centered:
 
 ```python
 # Draw centered title
@@ -99,6 +103,8 @@ renderer.draw_text(
 ```
 
 ### Using Custom Fonts
+
+Use when you want a specific aesthetic different from the default pygame font:
 
 ```python
 # Place font file in assets/fonts/ and reference by name
@@ -142,7 +148,15 @@ Text textures are cached using a key of:
 This means:
 - Same text with same parameters = reuses texture
 - Different text = creates new texture
+- Different colors = separate cache entries
 - Dynamic text (scores) creates new textures as numbers change
+
+**Memory Implications:**
+- Each unique combination of (text, size, color, font) creates a cache entry
+- Similar text in different colors will create multiple cache entries
+- For example, "Start Game" in cyan and yellow = 2 cache entries
+- In typical gameplay, cache size remains manageable (< 100 entries)
+- Consider the cache size if implementing effects with many color variations
 
 ### Best Practices
 
@@ -177,8 +191,11 @@ This means:
 ### Performance issues
 
 - Check texture cache size: `len(renderer.text_texture_cache)`
+- **Normal cache size:** 10-50 entries for typical gameplay
+- **Warning threshold:** > 200 entries may indicate excessive variation
+- **Problem threshold:** > 500 entries suggests a memory leak or poor usage pattern
 - Clear cache if needed (would need to add method)
-- Reduce number of unique text strings
+- Reduce number of unique text strings or color variations
 
 ## Future Enhancements
 

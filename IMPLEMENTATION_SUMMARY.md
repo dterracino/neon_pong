@@ -53,32 +53,24 @@ FONT_SIZE_SMALL = 24   # Small text, controls
 ### Rendering Pipeline
 
 ```
-┌─────────────────────────────────────────────┐
-│ begin_frame()                                │
-│  - Clear scene framebuffer                  │
-│  - Clear UI framebuffer (transparent)       │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│ Scene Rendering                              │
-│  - Draw game objects (paddles, ball, etc.)  │
-│  - Target: scene_fbo                        │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│ Text Rendering (draw_text calls)            │
-│  - Render text to pygame surface            │
-│  - Convert to OpenGL texture                │
-│  - Draw to ui_fbo                           │
-│  - Cache texture for reuse                  │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│ end_frame()                                  │
-│  1. Apply bloom to scene_texture            │
-│  2. Draw bloomed scene to screen            │
-│  3. Draw UI overlay on top (alpha blend)    │
-└─────────────────────────────────────────────┘
+Step 1: begin_frame()
+        - Clear scene framebuffer
+        - Clear UI framebuffer (transparent)
+
+Step 2: Scene Rendering
+        - Draw game objects (paddles, ball, etc.)
+        - Target: scene_fbo
+
+Step 3: Text Rendering (draw_text calls)
+        - Render text to pygame surface
+        - Convert to OpenGL texture
+        - Draw to ui_fbo
+        - Cache texture for reuse
+
+Step 4: end_frame()
+        1. Apply bloom to scene_texture
+        2. Draw bloomed scene to screen
+        3. Draw UI overlay on top (alpha blend)
 ```
 
 ### Key Features
