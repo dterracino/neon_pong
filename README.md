@@ -9,8 +9,8 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🌌 **Shader-drawn animated backgrounds** (starfield, plasma, waves)
 - 🌈 Neon-vaporwave color scheme
 - 🎵 Sound effects and background music support
-- 🎯 Two-player local multiplayer
-- 🤖 AI opponent option
+- 🎯 Single-player vs AI or two-player local multiplayer
+- 🤖 AI opponent with ball-tracking behavior
 - 💫 Particle effects and screen shake
 - 🔍 Comprehensive debug logging for troubleshooting
 
@@ -45,10 +45,12 @@ You can also run `python tests/test_debug_output.py` to see what normal debug ou
 
 ## Controls
 
+- **Menu Navigation**: Arrow keys + Enter to select
+  - **1 Player**: Play against AI opponent
+  - **2 Player**: Play against another human
 - **Player 1**: W (up) / S (down)
-- **Player 2**: Up Arrow / Down Arrow
+- **Player 2**: Up Arrow / Down Arrow (in 2 Player mode)
 - **Pause**: ESC or P
-- **Menu**: Arrow keys + Enter
 
 ## Project Structure
 

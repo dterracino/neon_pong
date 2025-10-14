@@ -23,7 +23,7 @@ class MenuScene(Scene):
         self.audio_manager = audio_manager
         
         self.selected_option = 0
-        self.options = ["Start Game", "Quit"]
+        self.options = ["1 Player", "2 Player", "Quit"]
         
         # Try to start menu music
         # self.audio_manager.play_music('menu_music.ogg')
@@ -40,12 +40,17 @@ class MenuScene(Scene):
     
     def _select_option(self):
         print(f"[DEBUG] MenuScene._select_option: Selected option {self.selected_option}")
-        if self.selected_option == 0:  # Start Game
-            print("[DEBUG] MenuScene._select_option: Creating game scene...")
-            game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager)
+        if self.selected_option == 0:  # 1 Player (AI opponent)
+            print("[DEBUG] MenuScene._select_option: Creating game scene with AI opponent...")
+            game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, ai_enabled=True)
             print("[DEBUG] MenuScene._select_option: Changing to game scene...")
             self.scene_manager.change_scene(game_scene)
-        elif self.selected_option == 1:  # Quit
+        elif self.selected_option == 1:  # 2 Player
+            print("[DEBUG] MenuScene._select_option: Creating game scene for 2 players...")
+            game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, ai_enabled=False)
+            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
+            self.scene_manager.change_scene(game_scene)
+        elif self.selected_option == 2:  # Quit
             print("[DEBUG] MenuScene._select_option: Clearing scenes (quit)...")
             self.scene_manager.clear_scenes()
     
@@ -69,6 +74,11 @@ class MenuScene(Scene):
         # Draw controls
         controls_y = 550
         self.renderer.draw_text("Player 1: W/S", 100, controls_y, FONT_SIZE_SMALL, COLOR_CYAN)
-        self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
+        
+        # Show different text based on selected option
+        if self.selected_option == 0:  # 1 Player mode
+            self.renderer.draw_text("Player 2: AI", WINDOW_WIDTH - 250, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
+        else:  # 2 Player mode or Quit
+            self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
         
         self.renderer.end_frame()
