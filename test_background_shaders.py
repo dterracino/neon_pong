@@ -70,7 +70,7 @@ def test_shader_syntax():
             print("✗ Plasma shader missing required uniforms")
             tests_passed = False
     
-    waves_path = os.path.join(shader_dir, 'background_waves.frag')
+    # waves_path already defined above
     with open(waves_path, 'r') as f:
         content = f.read()
         if 'uniform float time' in content and 'uniform vec2 resolution' in content:
