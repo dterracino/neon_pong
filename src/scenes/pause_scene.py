@@ -5,7 +5,7 @@ import pygame
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
 from src.audio.audio_manager import AudioManager
-from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_YELLOW
+from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_YELLOW, FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 
 
 class PauseScene(Scene):
@@ -37,7 +37,7 @@ class PauseScene(Scene):
         self.renderer.begin_frame()
         
         # Draw pause text
-        self.renderer.draw_text("PAUSED", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40, 72, COLOR_YELLOW, centered=True)
-        self.renderer.draw_text("Press P or ESC to Resume", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50, 32, COLOR_YELLOW, centered=True)
+        self.renderer.draw_text("PAUSED", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40, FONT_SIZE_LARGE, COLOR_YELLOW, centered=True)
+        self.renderer.draw_text("Press P or ESC to Resume", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50, FONT_SIZE_DEFAULT, COLOR_YELLOW, centered=True)
         
         self.renderer.end_frame()

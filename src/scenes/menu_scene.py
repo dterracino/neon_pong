@@ -8,7 +8,8 @@ from src.audio.audio_manager import AudioManager
 from src.scenes.game_scene import GameScene
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT,
-    COLOR_PINK, COLOR_CYAN, COLOR_YELLOW
+    COLOR_PINK, COLOR_CYAN, COLOR_YELLOW,
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL
 )
 
 
@@ -56,18 +57,18 @@ class MenuScene(Scene):
         
         # Draw title
         title_y = 150
-        self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, 72, COLOR_PINK, centered=True)
+        self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
         
         # Draw menu options
         option_y = 350
         for i, option in enumerate(self.options):
             color = COLOR_YELLOW if i == self.selected_option else COLOR_CYAN
             y = option_y + i * 80
-            self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, 48, color, centered=True)
+            self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, FONT_SIZE_MEDIUM, color, centered=True)
         
         # Draw controls
         controls_y = 550
-        self.renderer.draw_text("Player 1: W/S", 100, controls_y, 24, COLOR_CYAN)
-        self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, 24, COLOR_PINK)
+        self.renderer.draw_text("Player 1: W/S", 100, controls_y, FONT_SIZE_SMALL, COLOR_CYAN)
+        self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
         
         self.renderer.end_frame()

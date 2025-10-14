@@ -42,3 +42,9 @@ PARTICLE_SPEED = 100
 # Audio settings
 MUSIC_VOLUME = 0.3
 SFX_VOLUME = 0.5
+
+# Font sizes
+FONT_SIZE_LARGE = 72   # For titles and big messages
+FONT_SIZE_MEDIUM = 48  # For menu options
+FONT_SIZE_DEFAULT = 32 # Default text size
+FONT_SIZE_SMALL = 24   # For small text like controls

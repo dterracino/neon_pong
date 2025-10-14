@@ -195,14 +195,20 @@ class Renderer:
                   font_name: Optional[str] = None, centered: bool = False):
         """Draw text using pygame fonts and OpenGL textures
         
+        This method renders text to a UI overlay that is drawn AFTER the bloom effect,
+        ensuring text remains crisp and readable. Text is cached in textures for performance.
+        
         Args:
             text: Text to render
             x: X position (left edge, or center if centered=True)
             y: Y position (top edge)
-            size: Font size
+            size: Font size (use constants from src.utils.constants for consistency)
             color: RGBA color tuple (0-1 range)
-            font_name: Font file name (None for default)
+            font_name: Font file name in assets/fonts/ (None for default pygame font)
             centered: If True, text is centered at x position
+        
+        Example:
+            renderer.draw_text("HELLO", 400, 300, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
         """
         if not self.basic_program:
             print("[ERROR] Renderer.draw_text: Cannot draw - basic_program not loaded!")

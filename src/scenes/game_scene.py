@@ -12,7 +12,8 @@ from src.scenes.pause_scene import PauseScene
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
-    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW
+    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW,
+    FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 )
 
 
@@ -187,15 +188,15 @@ class GameScene(Scene):
         
         # Draw scores
         score_y = 50
-        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, 64, COLOR_CYAN, centered=True)
-        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, 64, COLOR_PINK, centered=True)
+        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, FONT_SIZE_LARGE, COLOR_CYAN, centered=True)
+        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
         
         # Draw game over message
         if self.game_over:
             msg_y = WINDOW_HEIGHT // 2 - 50
             color = COLOR_CYAN if self.winner == 1 else COLOR_PINK
             winner_text = f"PLAYER {self.winner} WINS!"
-            self.renderer.draw_text(winner_text, WINDOW_WIDTH // 2, msg_y, 72, color, centered=True)
-            self.renderer.draw_text("Press ESC for Menu", WINDOW_WIDTH // 2, msg_y + 100, 32, COLOR_YELLOW, centered=True)
+            self.renderer.draw_text(winner_text, WINDOW_WIDTH // 2, msg_y, FONT_SIZE_LARGE, color, centered=True)
+            self.renderer.draw_text("Press ESC for Menu", WINDOW_WIDTH // 2, msg_y + 100, FONT_SIZE_DEFAULT, COLOR_YELLOW, centered=True)
         
         self.renderer.end_frame()
