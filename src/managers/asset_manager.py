@@ -60,6 +60,7 @@ class AssetManager:
             except Exception as e:
                 print(f"[ERROR] AssetManager.get_font: Error loading font {name}: {e}")
                 self.fonts[key] = pygame.font.Font(None, size)
+
         
         return self.fonts[key]
     

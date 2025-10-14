@@ -16,7 +16,7 @@ def test_text_rendering():
     """Test the text rendering functionality"""
     print("Initializing pygame...")
     pygame.init()
-    
+
     print("Creating OpenGL context...")
     pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
     pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
@@ -27,11 +27,11 @@ def test_text_rendering():
     
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
     ctx = moderngl.create_context()
-    
+
     print("Creating renderer...")
     shader_manager = ShaderManager(ctx)
     renderer = Renderer(ctx, shader_manager)
-    
+
     print("Testing text rendering...")
     renderer.begin_frame()
     
