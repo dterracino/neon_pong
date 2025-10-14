@@ -102,3 +102,37 @@ class AssetManager:
         """Preload multiple sounds"""
         for filename in filenames:
             self.load_sound(filename)
+    
+    def preload_fonts_from_directory(self, sizes: list = None):
+        """Preload all fonts from the fonts directory
+        
+        Args:
+            sizes: List of font sizes to preload for each font. 
+                   If None, uses default sizes [24, 32, 48, 64, 72]
+        """
+        if sizes is None:
+            sizes = [24, 32, 48, 64, 72]  # Default sizes
+        
+        if not os.path.exists(self.fonts_path):
+            print(f"[DEBUG] AssetManager.preload_fonts_from_directory: Fonts path does not exist: {self.fonts_path}")
+            return
+        
+        # Get all font files in the fonts directory
+        font_files = [f for f in os.listdir(self.fonts_path) 
+                     if f.endswith(('.ttf', '.otf', '.fon'))]
+        
+        if not font_files:
+            print(f"[DEBUG] AssetManager.preload_fonts_from_directory: No fonts found in {self.fonts_path}")
+            return
+        
+        print(f"[DEBUG] AssetManager.preload_fonts_from_directory: Preloading {len(font_files)} fonts at {len(sizes)} sizes...")
+        
+        for font_file in font_files:
+            for size in sizes:
+                try:
+                    self.get_font(font_file, size)
+                    print(f"[DEBUG] AssetManager.preload_fonts_from_directory: Preloaded {font_file} at size {size}")
+                except Exception as e:
+                    print(f"[ERROR] AssetManager.preload_fonts_from_directory: Failed to preload {font_file} at size {size}: {e}")
+        
+        print(f"[DEBUG] AssetManager.preload_fonts_from_directory: Preloaded {len(self.fonts)} font/size combinations")
