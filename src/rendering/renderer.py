@@ -333,3 +333,59 @@ class Renderer:
         self.ctx.disable(moderngl.BLEND)
         atlas_texture.release()
 
+    def draw_text_direct(self, text: str, x: float, y: float, size: int, 
+                        color: Tuple[float, float, float, float],
+                        font_name: Optional[str] = None):
+        """
+        Render text immediately to the current framebuffer without batching.
+        Useful for rendering after end_frame() has been called.
+        """
+        # Render text to pygame surface
+        pygame_color = (
+            int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+        )
+        font = self.asset_manager.get_font(font_name, size)
+        surface = font.render(text, True, pygame_color).convert_alpha()
+        
+        # Convert to texture
+        text_data = pygame.image.tostring(surface, 'RGBA')
+        text_texture = self.ctx.texture(surface.get_size(), 4, text_data)
+        text_texture.repeat_x = False
+        text_texture.repeat_y = False
+        text_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        
+        # Calculate NDC coordinates
+        ndc_x = (x / WINDOW_WIDTH) * 2 - 1
+        ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
+        ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
+        ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
+        
+        # Create vertices (flipped UVs for proper orientation)
+        vertices = np.array([
+            # pos.x, pos.y, uv.x, uv.y
+            ndc_x,       ndc_y,       0.0, 1.0,  # Top-left
+            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
+            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y - ndc_h, 1.0, 0.0,  # Bottom-right
+            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
+        ], dtype='f4')
+        
+        # Create temporary VBO and VAO
+        temp_vbo = self.ctx.buffer(vertices.tobytes())
+        temp_vao = self.ctx.vertex_array(
+            self.text_program,
+            [(temp_vbo, '2f 2f', 'in_position', 'in_uv')]
+        )
+        
+        # Render
+        text_texture.use(0)
+        self.text_program['tex'] = 0
+        self.text_program['color'] = (1.0, 1.0, 1.0, 1.0)
+        temp_vao.render(moderngl.TRIANGLES)
+        
+        # Cleanup
+        temp_vao.release()
+        temp_vbo.release()
+        text_texture.release()
+

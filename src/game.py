@@ -9,8 +9,13 @@ from src.managers.shader_manager import ShaderManager
 from src.rendering.renderer import Renderer
 from src.audio.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
+from src.utils.fps_counter import FPSCounter
 from src.utils.constants import (
-    WINDOW_WIDTH, WINDOW_HEIGHT, FPS, WINDOW_TITLE
+    WINDOW_WIDTH, WINDOW_HEIGHT, FPS, WINDOW_TITLE,
+    FPS_DISPLAY_SHOW_INSTANT, FPS_DISPLAY_SHOW_AVERAGE,
+    FPS_DISPLAY_SHOW_1_PERCENT, FPS_DISPLAY_SHOW_0_1_PERCENT,
+    FPS_DISPLAY_AVERAGE_WINDOW, FPS_DISPLAY_POSITION_X, FPS_DISPLAY_POSITION_Y,
+    FONT_SIZE_SMALL, COLOR_YELLOW
 )
 
 
@@ -84,6 +89,12 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.dt = 0
+        
+        # Initialize FPS counter
+        print("[DEBUG] Game.__init__: Initializing FPS counter...")
+        self.fps_counter = FPSCounter(average_window=FPS_DISPLAY_AVERAGE_WINDOW)
+        print("[DEBUG] Game.__init__: FPS counter initialized")
+        
         print("[DEBUG] Game.__init__: Game initialization complete!")
         
     def run(self):
@@ -93,6 +104,9 @@ class Game:
         while self.running:
             # Calculate delta time
             self.dt = self.clock.tick(FPS) / 1000.0
+            
+            # Update FPS counter
+            self.fps_counter.update(self.dt)
             
             if frame_count < 5:  # Only log first 5 frames to avoid spam
                 print(f"[DEBUG] Game.run: Frame {frame_count}, dt={self.dt:.4f}")
@@ -114,6 +128,10 @@ class Game:
                 if frame_count < 5:
                     print(f"[DEBUG] Game.run: Rendering scene: {type(self.scene_manager.current_scene).__name__}")
                 self.scene_manager.current_scene.render()
+            
+            # Render FPS display if enabled
+            if self.fps_counter.is_visible():
+                self._render_fps_display()
                 
             # Swap buffers
             pygame.display.flip()
@@ -134,5 +152,46 @@ class Game:
             if event.type == pygame.QUIT:
                 print("[DEBUG] Game._handle_events: QUIT event received")
                 self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F3:
+                    # Toggle FPS display
+                    self.fps_counter.toggle_visibility()
+                    status = "enabled" if self.fps_counter.is_visible() else "disabled"
+                    print(f"[DEBUG] Game._handle_events: FPS display {status}")
+                elif self.scene_manager.current_scene:
+                    self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:
                 self.scene_manager.current_scene.handle_event(event)
+    
+    def _render_fps_display(self):
+        """Render the FPS display overlay directly to screen"""
+        instant, average, one_percent, point_one_percent = self.fps_counter.get_metrics()
+        
+        x = FPS_DISPLAY_POSITION_X
+        y = FPS_DISPLAY_POSITION_Y
+        line_height = FONT_SIZE_SMALL + 5
+        
+        # We need to render directly after end_frame() has been called
+        # Use the renderer's direct text rendering capability
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
+        # Render each metric if enabled in configuration
+        lines = []
+        if FPS_DISPLAY_SHOW_INSTANT:
+            lines.append(f"FPS: {instant:.1f}")
+        if FPS_DISPLAY_SHOW_AVERAGE:
+            lines.append(f"Avg: {average:.1f}")
+        if FPS_DISPLAY_SHOW_1_PERCENT:
+            lines.append(f"1% Low: {one_percent:.1f}")
+        if FPS_DISPLAY_SHOW_0_1_PERCENT:
+            lines.append(f"0.1% Low: {point_one_percent:.1f}")
+        
+        # Render all lines
+        for i, line in enumerate(lines):
+            self.renderer.draw_text_direct(
+                line, x, y + i * line_height, 
+                FONT_SIZE_SMALL, COLOR_YELLOW
+            )
+        
+        self.ctx.disable(moderngl.BLEND)

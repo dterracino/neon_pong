@@ -51,3 +51,12 @@ FONT_SIZE_SMALL = 24   # For small text like controls
 
 # Background settings
 BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "solid"
+
+# FPS Display settings
+FPS_DISPLAY_SHOW_INSTANT = True     # Show instant frame rate
+FPS_DISPLAY_SHOW_AVERAGE = True     # Show average frame rate
+FPS_DISPLAY_SHOW_1_PERCENT = True   # Show 1% low
+FPS_DISPLAY_SHOW_0_1_PERCENT = True # Show 0.1% low
+FPS_DISPLAY_AVERAGE_WINDOW = 1.0    # Window size for average calculation (seconds)
+FPS_DISPLAY_POSITION_X = 10         # X position for FPS display
+FPS_DISPLAY_POSITION_Y = 10         # Y position for FPS display
