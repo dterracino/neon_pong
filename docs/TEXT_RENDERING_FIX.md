@@ -2,7 +2,7 @@
 
 ## Problem Summary
 
-Text rendering was producing black images instead of displaying colored text. The issue affected the test program `test_text_rendering.py`, which was writing completely black images to disk.
+Text rendering was producing black images instead of displaying colored text. The issue affected the test program `tests/test_text_rendering.py`, which was writing completely black images to disk.
 
 ## Root Cause Analysis
 
@@ -122,23 +122,23 @@ def preload_fonts_from_directory(self, sizes=None):
 
 ### 4. Test Enhancements
 
-- Updated `test_text_rendering.py` to check if output is black
-- Created `test_text_shader_uv.py` to validate UV coordinate math
-- Created `test_font_preload.py` to test font preloading
-- Created `test_pygame_text_visual.py` to verify pygame rendering works
+- Updated `tests/test_text_rendering.py` to check if output is black
+- Created `tests/test_text_shader_uv.py` to validate UV coordinate math
+- Created `tests/test_font_preload.py` to test font preloading
+- Created `tests/test_pygame_text_visual.py` to verify pygame rendering works
 
 ## Verification
 
 ### Tests That Pass
 
-1. ✅ **test_text_api.py**: Validates pygame font loading and rendering
-2. ✅ **test_text_shader_uv.py**: Validates UV coordinate mapping is correct
-3. ✅ **test_font_preload.py**: Validates font preloading functionality
-4. ✅ **test_pygame_text_visual.py**: Confirms pygame produces visible text
+1. ✅ **tests/test_text_api.py**: Validates pygame font loading and rendering
+2. ✅ **tests/test_text_shader_uv.py**: Validates UV coordinate mapping is correct
+3. ✅ **tests/test_font_preload.py**: Validates font preloading functionality
+4. ✅ **tests/test_pygame_text_visual.py**: Confirms pygame produces visible text
 
 ### Tests Requiring OpenGL Context
 
-- **test_text_rendering.py**: Full integration test (requires OpenGL context)
+- **tests/test_text_rendering.py**: Full integration test (requires OpenGL context)
   - Cannot run in CI environment without hardware acceleration
   - Should work on user's machine with proper OpenGL support
 
@@ -184,7 +184,7 @@ By passing UV coordinates explicitly, we can position and size quads anywhere on
 
 When testing on a machine with OpenGL support:
 
-1. Run `test_text_rendering.py`
+1. Run `tests/test_text_rendering.py`
 2. Check that the output image (saved to `~/tmp/text_rendering_test.png` on Unix or equivalent on Windows) contains visible text
 3. Verify text is colored (not black/white)
 4. Verify background is dark purple

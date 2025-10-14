@@ -126,7 +126,7 @@ All tests pass successfully:
 3. ✅ **test_font_preload.py** - Font preloading works
 4. ✅ **test_pygame_text_visual.py** - Pygame produces visible colored text (2.45% screen coverage)
 
-The full OpenGL integration test (`test_text_rendering.py`) requires hardware OpenGL acceleration and cannot run in the CI environment, but should work on your machine.
+The full OpenGL integration test (`tests/test_text_rendering.py`) requires hardware OpenGL acceleration and cannot run in the CI environment, but should work on your machine.
 
 ## Why This Fix Works
 
@@ -139,7 +139,7 @@ By passing UV coordinates explicitly, we can position and size quads anywhere on
 
 ## What You Should See Now
 
-After these changes, when you run `test_text_rendering.py`:
+After these changes, when you run `tests/test_text_rendering.py`:
 
 1. Text should render in the specified colors (pink, cyan, yellow)
 2. Text should be positioned correctly on screen
@@ -163,7 +163,7 @@ As requested, I made **minimal, surgical changes**:
 ## Next Steps
 
 1. Test on your machine with OpenGL support
-2. Run `test_text_rendering.py` and verify the output image has colored text
+2. Run `tests/test_text_rendering.py` and verify the output image has colored text
 3. Run the main game and check that menu text is visible
 4. If you add custom fonts to `assets/fonts/`, they'll automatically work
 

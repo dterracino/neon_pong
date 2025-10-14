@@ -107,8 +107,8 @@ Step 4: end_frame()
 ## Testing
 
 Created test files to verify functionality:
-- `test_text_api.py` - Tests pygame font loading and rendering
-- `test_text_rendering.py` - Tests full OpenGL integration (requires display)
+- `tests/test_text_api.py` - Tests pygame font loading and rendering
+- `tests/test_text_rendering.py` - Tests full OpenGL integration (requires display)
 
 All tests pass in environments with pygame support.
 

@@ -100,7 +100,7 @@ If scene stack is 0, no scenes are active. Check scene initialization.
 Run the included test script to see a simulation of the debug output:
 
 ```bash
-python test_debug_output.py
+python tests/test_debug_output.py
 ```
 
 This shows what normal debug output looks like without actually running the game (useful for systems without OpenGL).

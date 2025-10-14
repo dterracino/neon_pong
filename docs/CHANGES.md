@@ -12,9 +12,9 @@
 5. **`FONT_USAGE.md`** - Guide for using fonts in the game
 
 ### Tests
-6. **`test_text_shader_uv.py`** - Validates UV coordinate mapping ✅
-7. **`test_font_preload.py`** - Tests font preloading functionality ✅
-8. **`test_pygame_text_visual.py`** - Verifies pygame text rendering ✅
+6. **`tests/test_text_shader_uv.py`** - Validates UV coordinate mapping ✅
+7. **`tests/test_font_preload.py`** - Tests font preloading functionality ✅
+8. **`tests/test_pygame_text_visual.py`** - Verifies pygame text rendering ✅
 
 ## Files Modified (3 files)
 
@@ -31,7 +31,7 @@
    - Enhanced error handling for font loading
 
 ### Tests
-3. **`test_text_rendering.py`**
+3. **`tests/test_text_rendering.py`**
    - Added black screen detection
    - Imports numpy for pixel analysis
    - Reports non-black pixel percentage
@@ -99,9 +99,9 @@ vertices = [x, y, u, v, x, y, u, v, ...]
 
 To verify the fix works on your machine:
 
-1. Run `python test_text_shader_uv.py` - Should show ✅ UV coordinates correct
-2. Run `python test_font_preload.py` - Should show ✅ Font loading works
-3. Run `python test_pygame_text_visual.py` - Should create visible image
-4. Run `python test_text_rendering.py` - Should show colored text (requires OpenGL)
+1. Run `python tests/test_text_shader_uv.py` - Should show ✅ UV coordinates correct
+2. Run `python tests/test_font_preload.py` - Should show ✅ Font loading works
+3. Run `python tests/test_pygame_text_visual.py` - Should create visible image
+4. Run `python tests/test_text_rendering.py` - Should show colored text (requires OpenGL)
 
 All tests should pass and show that text rendering is working.

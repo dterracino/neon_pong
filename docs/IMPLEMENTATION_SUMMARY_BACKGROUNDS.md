@@ -17,8 +17,8 @@ Successfully implemented shader-drawn animated backgrounds for the Neon Pong gam
 - `IMPLEMENTATION_SUMMARY_BACKGROUNDS.md` - This file
 
 ### Tests
-- `test_background_shaders.py` - Validates shader files and syntax
-- `test_background_integration.py` - Validates integration with renderer
+- `tests/test_background_shaders.py` - Validates shader files and syntax
+- `tests/test_background_integration.py` - Validates integration with renderer
 
 ## Files Modified
 
@@ -119,13 +119,13 @@ BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "solid
 All tests pass:
 
 ### New Tests
-- ✅ `test_background_shaders.py` - Validates shader files
-- ✅ `test_background_integration.py` - Validates integration
+- ✅ `tests/test_background_shaders.py` - Validates shader files
+- ✅ `tests/test_background_integration.py` - Validates integration
 
 ### Existing Tests (Still Pass)
-- ✅ `test_text_api.py` - Font loading and rendering
-- ✅ `test_text_shader_uv.py` - Text shader UV coordinates
-- ✅ `test_font_preload.py` - Font preloading
+- ✅ `tests/test_text_api.py` - Font loading and rendering
+- ✅ `tests/test_text_shader_uv.py` - Text shader UV coordinates
+- ✅ `tests/test_font_preload.py` - Font preloading
 
 ## Performance
 
@@ -162,7 +162,7 @@ To add a new background effect:
 2. Add uniforms: `uniform float time; uniform vec2 resolution;`
 3. Add to `constants.py`: Update BACKGROUND_TYPE options
 4. Add to `renderer.py`: Add elif case in shader loading
-5. Update tests: Add checks in `test_background_shaders.py`
+5. Update tests: Add checks in `tests/test_background_shaders.py`
 6. Update docs: Add description to `BACKGROUND_SHADERS.md`
 
 ## Conclusion

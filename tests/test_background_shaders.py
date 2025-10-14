@@ -7,7 +7,7 @@ import sys
 
 def test_shader_syntax():
     """Test that shader files exist and have basic valid syntax"""
-    shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
+    shader_dir = os.path.join(os.path.dirname(__file__), '..', 'shaders')
     
     tests_passed = True
     
@@ -83,7 +83,7 @@ def test_shader_syntax():
 
 def test_constants_updated():
     """Test that constants file has background type setting"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.constants import BACKGROUND_TYPE
         print(f"✓ BACKGROUND_TYPE constant found: {BACKGROUND_TYPE}")

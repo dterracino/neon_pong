@@ -7,7 +7,7 @@ import os
 
 def test_fps_counter_imports():
     """Test that FPS counter can be imported"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.fps_counter import FPSCounter
         print("✓ FPSCounter imports successfully")
@@ -18,7 +18,7 @@ def test_fps_counter_imports():
 
 def test_fps_counter_basic():
     """Test basic FPS counter functionality"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.fps_counter import FPSCounter
         
@@ -51,7 +51,7 @@ def test_fps_counter_basic():
 
 def test_fps_constants():
     """Test that FPS display constants are defined"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.constants import (
             FPS_DISPLAY_SHOW_INSTANT,
@@ -70,9 +70,9 @@ def test_fps_constants():
 
 def test_game_integration():
     """Test that Game class has FPS counter integration"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
-        game_path = os.path.join(os.path.dirname(__file__), 'src', 'game.py')
+        game_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'game.py')
         with open(game_path, 'r') as f:
             content = f.read()
             checks = [
@@ -100,7 +100,7 @@ def test_game_integration():
 
 def test_fps_percentile_calculation():
     """Test that percentile calculations work correctly"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.fps_counter import FPSCounter
         

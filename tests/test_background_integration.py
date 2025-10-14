@@ -8,7 +8,7 @@ import sys
 
 def test_renderer_imports():
     """Test that renderer can be imported with the new changes"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         # This will validate syntax and imports
         from src.rendering.renderer import Renderer
@@ -20,7 +20,7 @@ def test_renderer_imports():
 
 def test_constants():
     """Test that constants are properly defined"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.constants import BACKGROUND_TYPE, WINDOW_WIDTH, WINDOW_HEIGHT
         print(f"✓ Constants imported: BACKGROUND_TYPE={BACKGROUND_TYPE}, resolution={WINDOW_WIDTH}x{WINDOW_HEIGHT}")
@@ -31,7 +31,7 @@ def test_constants():
 
 def test_shader_manager():
     """Test that shader manager can be imported"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.managers.shader_manager import ShaderManager
         print("✓ ShaderManager imports successfully")
@@ -42,7 +42,7 @@ def test_shader_manager():
 
 def test_game_loop_logic():
     """Test that game.py has the update_time call"""
-    game_path = os.path.join(os.path.dirname(__file__), 'src', 'game.py')
+    game_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'game.py')
     with open(game_path, 'r') as f:
         content = f.read()
         if 'update_time' in content and 'self.renderer.update_time' in content:
@@ -54,7 +54,7 @@ def test_game_loop_logic():
 
 def test_renderer_has_background_logic():
     """Test that renderer.py has background rendering logic"""
-    renderer_path = os.path.join(os.path.dirname(__file__), 'src', 'rendering', 'renderer.py')
+    renderer_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'rendering', 'renderer.py')
     with open(renderer_path, 'r') as f:
         content = f.read()
         checks = [

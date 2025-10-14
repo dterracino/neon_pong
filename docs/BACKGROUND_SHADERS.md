@@ -119,13 +119,13 @@ The backgrounds follow these principles:
 
 Two test scripts validate the background system:
 
-### test_background_shaders.py
+### tests/test_background_shaders.py
 Tests shader file validity:
 - Shader files exist and have correct syntax
 - Required uniforms are present
 - Constants are properly configured
 
-### test_background_integration.py
+### tests/test_background_integration.py
 Tests integration with the renderer:
 - Renderer imports successfully with new code
 - Background logic is present
@@ -133,8 +133,8 @@ Tests integration with the renderer:
 
 Run tests:
 ```bash
-python3 test_background_shaders.py
-python3 test_background_integration.py
+python3 tests/test_background_shaders.py
+python3 tests/test_background_integration.py
 ```
 
 ## Extending

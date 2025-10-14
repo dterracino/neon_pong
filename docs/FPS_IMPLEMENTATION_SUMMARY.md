@@ -33,12 +33,12 @@ All settings are in `src/utils/constants.py`:
    - Percentile low calculations
    - Visibility toggle management
 
-2. **`test_fps_counter.py`** (155 lines)
+2. **`tests/test_fps_counter.py`** (155 lines)
    - Unit tests for FPS counter functionality
    - Integration tests for Game class
    - Validation of all configuration options
 
-3. **`test_fps_visual.py`** (133 lines)
+3. **`tests/test_fps_visual.py`** (133 lines)
    - Visual/behavioral tests
    - Configuration validation
    - Expected output demonstrations
@@ -196,7 +196,7 @@ end_frame()                             │
 
 All functionality is thoroughly tested:
 
-### Unit Tests (`test_fps_counter.py`)
+### Unit Tests (`tests/test_fps_counter.py`)
 - ✅ FPS counter initialization
 - ✅ Visibility toggle
 - ✅ Frame time updates
@@ -206,7 +206,7 @@ All functionality is thoroughly tested:
 - ✅ Game class integration
 - ✅ Configuration constants
 
-### Visual Tests (`test_fps_visual.py`)
+### Visual Tests (`tests/test_fps_visual.py`)
 - ✅ Configuration options accessibility
 - ✅ Renderer direct draw method
 - ✅ FPS display text formatting

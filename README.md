@@ -39,9 +39,9 @@ python main.py
 
 ### Troubleshooting
 
-If the game displays a black screen or doesn't start properly, check the console output for debug messages. See [DEBUG_GUIDE.md](DEBUG_GUIDE.md) for detailed troubleshooting instructions.
+If the game displays a black screen or doesn't start properly, check the console output for debug messages. See [docs/DEBUG_GUIDE.md](docs/DEBUG_GUIDE.md) for detailed troubleshooting instructions.
 
-You can also run `python test_debug_output.py` to see what normal debug output should look like.
+You can also run `python tests/test_debug_output.py` to see what normal debug output should look like.
 
 ## Controls
 
