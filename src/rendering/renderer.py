@@ -4,12 +4,24 @@ ModernGL renderer for game graphics
 import moderngl
 import numpy as np
 import pygame
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, List
+from dataclasses import dataclass
 from src.managers.shader_manager import ShaderManager
 from src.rendering.post_process import PostProcessor
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
+@dataclass
+class TextDrawCall:
+    """A record to hold all the information for a single text draw call."""
+    text: str
+    x: float
+    y: float
+    size: int
+    color: Tuple[float, float, float, float]
+    pygame_color: Tuple[int, int, int]
+    font_name: Optional[str]
+    centered: bool
 
 class Renderer:
     """Handles all ModernGL rendering"""
@@ -21,19 +33,32 @@ class Renderer:
 
         # Load basic shader
         print("[DEBUG] Renderer.__init__: Loading basic shader...")
-        self.basic_program = shader_manager.load_shader('basic', 'basic.vert', 'basic.frag')
-        assert self.basic_program is not None, "Failed to load basic shader!"
+        basic_program_maybe = shader_manager.load_shader('basic', 'basic.vert', 'basic.frag')
+        assert basic_program_maybe is not None, "Failed to load basic shader!"
+        self.basic_program = basic_program_maybe
         print(f"[DEBUG] Renderer.__init__: Basic shader loaded successfully")
 
         # Load text shader
         print("[DEBUG] Renderer.__init__: Loading text shader...")
-        self.text_program = shader_manager.load_shader('text', 'text.vert', 'text.frag')
-        assert self.text_program is not None, "Failed to load text shader!"
+        text_program_maybe = shader_manager.load_shader('text', 'text.vert', 'text.frag')
+        assert text_program_maybe is not None, "Failed to load text shader!"
+        self.text_program = text_program_maybe
         print(f"[DEBUG] Renderer.__init__: Text shader loaded successfully")
 
         # Create post processor
         print("[DEBUG] Renderer.__init__: Creating post processor...")
         self.post_processor = PostProcessor(ctx, shader_manager)
+
+        # --- Batching setup for Text ---
+        self.text_batch: List[TextDrawCall] = []
+        # Create a dynamic VBO with a large-ish reserve size
+        # 1024 text calls * 6 vertices per call * 4 floats per vertex * 4 bytes per float
+        self.text_vbo = self.ctx.buffer(reserve=1024 * 6 * 4 * 4, dynamic=True)
+        self.text_vao = self.ctx.vertex_array(
+            self.text_program,
+            [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
+        )
+        print("[DEBUG] Renderer.__init__: Text batching VBO/VAO created")
 
         # Create vertex buffer for a quad
         vertices = np.array([
@@ -60,9 +85,6 @@ class Renderer:
         # Initialize asset manager for fonts
         self.asset_manager = AssetManager()
 
-        # Text texture cache
-        self.text_texture_cache: Dict[tuple, moderngl.Texture] = {}
-
         # UI overlay texture for text (rendered after bloom)
         self.ui_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.ui_fbo = ctx.framebuffer(color_attachments=[self.ui_texture])
@@ -71,6 +93,9 @@ class Renderer:
 
     def begin_frame(self):
         """Begin rendering a frame"""
+        # Clear the text batch for the new frame
+        self.text_batch.clear()
+
         # Render to scene framebuffer
         self.scene_fbo.use()
         self.ctx.clear(0.05, 0.02, 0.15, 1.0)  # Dark purple background
@@ -84,6 +109,9 @@ class Renderer:
 
     def end_frame(self):
         """End rendering and apply post-processing"""
+        # --- Flush the text batch to the UI texture ---
+        self._flush_text_batch()
+
         # Apply bloom post-processing to scene
         final_texture = self.post_processor.apply_bloom(self.scene_texture)
 
@@ -93,42 +121,29 @@ class Renderer:
 
         # Draw bloomed scene to screen
         final_texture.use(0)
-        if self.basic_program and 'tex' in self.basic_program:
-            self.basic_program['tex'] = 0
-            # Set color to white to render the texture as-is
-            if 'color' in self.basic_program:
-                self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)
-            self.quad_vao.render(moderngl.TRIANGLE_STRIP)
-        else:
-            print("[ERROR] Renderer.end_frame: Cannot render - basic_program not loaded or 'tex' uniform missing!")
-            return
+        self.basic_program['tex'] = 0
+        self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)
+        self.quad_vao.render(moderngl.TRIANGLE_STRIP)
 
-        # Draw UI overlay (text) on top, with alpha blending
+        # Draw UI overlay (which now contains our batched text) on top
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
 
         self.ui_texture.use(0)
-        if self.basic_program and 'tex' in self.basic_program:
-            self.basic_program['tex'] = 0
-            if 'color' in self.basic_program:
-                self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)
-            self.quad_vao.render(moderngl.TRIANGLE_STRIP)
+        self.basic_program['tex'] = 0
+        self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)
+        self.quad_vao.render(moderngl.TRIANGLE_STRIP)
 
         self.ctx.disable(moderngl.BLEND)
 
     def draw_rect(self, x: float, y: float, width: float, height: float, color: Tuple[float, float, float, float]):
         """Draw a filled rectangle"""
-        if not self.basic_program:
-            print("[ERROR] Renderer.draw_rect: Cannot draw - basic_program not loaded!")
-            return
-
-        # Convert screen coordinates to NDC
+        # This remains an immediate-mode draw call for simplicity
         ndc_x = (x / WINDOW_WIDTH) * 2 - 1
         ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
         ndc_width = (width / WINDOW_WIDTH) * 2
         ndc_height = (height / WINDOW_HEIGHT) * 2
 
-        # Create vertices for rectangle
         vertices = np.array([
             ndc_x, ndc_y - ndc_height,
             ndc_x + ndc_width, ndc_y - ndc_height,
@@ -136,187 +151,143 @@ class Renderer:
             ndc_x + ndc_width, ndc_y,
         ], dtype='f4')
 
-        # Create temporary VBO and VAO
         vbo = self.ctx.buffer(vertices.tobytes())
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
 
-        # Bind white texture and set color uniform
         self.white_texture.use(0)
-        if self.basic_program and 'tex' in self.basic_program:
-            self.basic_program['tex'] = 0
-        if self.basic_program and 'color' in self.basic_program:
-            self.basic_program['color'] = color
-
-        # Draw
+        self.basic_program['tex'] = 0
+        self.basic_program['color'] = color
+        
         vao.render(moderngl.TRIANGLE_STRIP)
-
-        # Cleanup
+        
         vao.release()
         vbo.release()
 
     def draw_circle(self, x: float, y: float, radius: float, color: Tuple[float, float, float, float], segments: int = 32):
         """Draw a filled circle"""
-        if not self.basic_program:
-            print("[ERROR] Renderer.draw_circle: Cannot draw - basic_program not loaded!")
-            return
-
-        # Convert to NDC
+        # This remains an immediate-mode draw call for simplicity
         ndc_x = (x / WINDOW_WIDTH) * 2 - 1
         ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
         ndc_radius_x = (radius / WINDOW_WIDTH) * 2
         ndc_radius_y = (radius / WINDOW_HEIGHT) * 2
 
-        # Create vertices for circle (triangle fan)
-        vertices_list = [ndc_x, ndc_y]  # Center point
-
+        vertices_list = [ndc_x, ndc_y]
         for i in range(segments + 1):
             angle = (i / segments) * 2 * np.pi
             vx = ndc_x + np.cos(angle) * ndc_radius_x
             vy = ndc_y + np.sin(angle) * ndc_radius_y
             vertices_list.extend([vx, vy])
-
         vertices = np.array(vertices_list, dtype='f4')
 
-        # Create temporary VBO and VAO
         vbo = self.ctx.buffer(vertices.tobytes())
         vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
 
-        # Bind white texture and set color uniform
         self.white_texture.use(0)
-        if self.basic_program and 'tex' in self.basic_program:
-            self.basic_program['tex'] = 0
-        if self.basic_program and 'color' in self.basic_program:
-            self.basic_program['color'] = color
-
-        # Draw
+        self.basic_program['tex'] = 0
+        self.basic_program['color'] = color
+        
         vao.render(moderngl.TRIANGLE_FAN)
-
-        # Cleanup
+        
         vao.release()
         vbo.release()
 
     def draw_text(self, text: str, x: float, y: float, size: int, color: Tuple[float, float, float, float],
                   font_name: Optional[str] = None, centered: bool = False):
-        """Draw text using pygame fonts and OpenGL textures
+        """Queues text to be drawn in a batch at the end of the frame."""
+        pygame_color = (
+            int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+        )
         
-        This method renders text to a UI overlay that is drawn AFTER the bloom effect,
-        ensuring text remains crisp and readable. Text is cached in textures for performance.
-        
-        Args:
-            text: Text to render
-            x: X position (left edge, or center if centered=True)
-            y: Y position (top edge)
-            size: Font size (use constants from src.utils.constants for consistency)
-            color: RGBA color tuple (0-1 range)
-            font_name: Font file name in assets/fonts/ (None for default pygame font)
-            centered: If True, text is centered at x position
-        
-        Example:
-            renderer.draw_text("HELLO", 400, 300, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
-        """
-        if not self.text_program:
-            print("[ERROR] Renderer.draw_text: Cannot draw - text_program not loaded!")
+        draw_call = TextDrawCall(
+            text, x, y, size, color, pygame_color, font_name, centered
+        )
+        self.text_batch.append(draw_call)
+
+    def _flush_text_batch(self):
+        """Renders all queued text in a single draw call."""
+        if not self.text_batch:
             return
 
-        # Convert color from 0-1 to 0-255 for pygame
-        pygame_color = (
-            int(color[0] * 255),
-            int(color[1] * 255),
-            int(color[2] * 255)
-        )
+        # --- Stage 1: Render all text surfaces and calculate atlas size ---
+        rendered_surfaces = []
+        total_width = 0
+        max_height = 0
+        for call in self.text_batch:
+            font = self.asset_manager.get_font(call.font_name, call.size)
+            surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+            rendered_surfaces.append(surface)
+            total_width += surface.get_width()
+            max_height = max(max_height, surface.get_height())
 
-        # Create cache key
-        cache_key = (text, size, pygame_color, font_name)
+        # --- Stage 2: Create texture atlas and generate vertex data ---
+        if total_width == 0 or max_height == 0:
+            return
 
-        # Check cache
-        if cache_key not in self.text_texture_cache:
-            # Get font from asset manager
-            font = self.asset_manager.get_font(font_name, size)
-            print(f"[DEBUG] Renderer.draw_text: Rendering text '{text}' with font size {size}")
+        atlas_surface = pygame.Surface((total_width, max_height), pygame.SRCALPHA)
+        
+        all_vertices = []
+        current_x = 0
+        for i, surface in enumerate(rendered_surfaces):
+            call = self.text_batch[i]
+            
+            # Blit surface onto the atlas, aligned to the BOTTOM
+            blit_y = max_height - surface.get_height()
+            atlas_surface.blit(surface, (current_x, blit_y))
+            
+            # Calculate UVs for this text in the atlas
+            u1 = current_x / total_width
+            v1 = blit_y / max_height  # This is the BOTTOM of the UV range
+            u2 = (current_x + surface.get_width()) / total_width
+            v2 = (blit_y + surface.get_height()) / max_height # This is the TOP of the UV range
 
-            # Render text to pygame surface
-            text_surface = font.render(text, True, pygame_color)
-            text_width, text_height = text_surface.get_size()
-            print(f"[DEBUG] Renderer.draw_text: Text surface size: {text_width}x{text_height}")
+            # Calculate screen position in NDC
+            draw_x = call.x
+            if call.centered:
+                draw_x -= surface.get_width() / 2
+            
+            ndc_x = (draw_x / WINDOW_WIDTH) * 2 - 1
+            ndc_y = 1 - (call.y / WINDOW_HEIGHT) * 2
+            ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
+            ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
+            
+            # Vertices for two triangles (a quad), with UVs correctly flipped
+            # pos.x, pos.y, uv.x, uv.y
+            v_bl = (ndc_x,       ndc_y - ndc_h, u1, v2) # Bottom-left vertex uses TOP UV coord
+            v_br = (ndc_x + ndc_w, ndc_y - ndc_h, u2, v2) # Bottom-right vertex uses TOP UV coord
+            v_tl = (ndc_x,       ndc_y,       u1, v1) # Top-left vertex uses BOTTOM UV coord
+            v_tr = (ndc_x + ndc_w, ndc_y,       u2, v1) # Top-right vertex uses BOTTOM UV coord
 
-            # Convert to RGBA, flipping it for OpenGL
-            text_data = pygame.image.tostring(text_surface, 'RGBA', True)
-            print(f"[DEBUG] Renderer.draw_text: Text data size: {len(text_data)} bytes")
+            all_vertices.extend([*v_tl, *v_bl, *v_tr, *v_bl, *v_br, *v_tr])
+            
+            current_x += surface.get_width()
 
-            # Create OpenGL texture
-            text_texture = self.ctx.texture((text_width, text_height), 4, text_data)
-            text_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
-            print(f"[DEBUG] Renderer.draw_text: Created texture: {text_texture.size}")
+        # --- Stage 3: Upload data to GPU and render ---
+        # Create atlas texture. We pass the data raw (un-flipped) and handle the
+        # vertical flip in our vertex UV coordinates.
+        atlas_data = pygame.image.tostring(atlas_surface, 'RGBA')
+        atlas_texture = self.ctx.texture(atlas_surface.get_size(), 4, atlas_data)
+        
+        atlas_texture.repeat_x = False
+        atlas_texture.repeat_y = False
+        
+        atlas_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
 
-            # Cache the texture
-            self.text_texture_cache[cache_key] = text_texture
-        else:
-            text_texture = self.text_texture_cache[cache_key]
-            print(f"[DEBUG] Renderer.draw_text: Using cached texture for '{text}'")
+        # Write vertex data to dynamic VBO
+        vertex_np = np.array(all_vertices, dtype='f4')
+        self.text_vbo.write(vertex_np.tobytes())
 
-        text_width, text_height = text_texture.size
-
-        # Adjust x position if centered
-        if centered:
-            x = x - text_width / 2
-
-        # Convert screen coordinates to NDC
-        ndc_x = (x / WINDOW_WIDTH) * 2 - 1
-        ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
-        ndc_width = (text_width / WINDOW_WIDTH) * 2
-        ndc_height = (text_height / WINDOW_HEIGHT) * 2
-
-        # Create vertices for text rectangle with UV coordinates
-        # Vertices: position (x, y) + UV (u, v)
-        vertices = np.array([
-            # Bottom-left vertex -> UV (0, 0)
-            ndc_x, ndc_y - ndc_height, 0.0, 0.0,
-            # Bottom-right vertex -> UV (1, 0)
-            ndc_x + ndc_width, ndc_y - ndc_height, 1.0, 0.0,
-            # Top-left vertex -> UV (0, 1)
-            ndc_x, ndc_y, 0.0, 1.0,
-            # Top-right vertex -> UV (1, 1)
-            ndc_x + ndc_width, ndc_y, 1.0, 1.0,
-        ], dtype='f4')
-
-        # Switch to UI framebuffer
-        current_fbo = self.ctx.fbo
+        # Switch to UI framebuffer to draw
         self.ui_fbo.use()
-
-        # Enable blending for text
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
 
-        # Create temporary VBO and VAO with position and UV
-        vbo = self.ctx.buffer(vertices.tobytes())
-        vao = self.ctx.vertex_array(
-            self.text_program,
-            [
-                (vbo, '2f 2f', 'in_position', 'in_uv')
-            ]
-        )
+        atlas_texture.use(0)
+        self.text_program['tex'] = 0
+        self.text_program['color'] = (1.0, 1.0, 1.0, 1.0) # Color is baked into texture
 
-        # Bind text texture and set color uniform
-        text_texture.use(0)
-        if self.text_program and 'tex' in self.text_program:
-            self.text_program['tex'] = 0
-        if self.text_program and 'color' in self.text_program:
-            # Use white color to render text texture as-is (text is already colored)
-            self.text_program['color'] = (1.0, 1.0, 1.0, color[3])
+        # Render just the part of the VBO we used
+        self.text_vao.render(moderngl.TRIANGLES, vertices=len(all_vertices) // 4)
 
-        print(f"[DEBUG] Renderer.draw_text: Drawing text '{text}' at ({x}, {y}) with NDC ({ndc_x:.2f}, {ndc_y:.2f}) size ({ndc_width:.2f}, {ndc_height:.2f})")
-
-        # Draw
-        vao.render(moderngl.TRIANGLE_STRIP)
-
-        # Cleanup
-        vao.release()
-        vbo.release()
         self.ctx.disable(moderngl.BLEND)
-
-        # Restore previous framebuffer
-        if current_fbo:
-            current_fbo.use()
-        else:
-            self.scene_fbo.use()
+        atlas_texture.release()
 
