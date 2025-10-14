@@ -32,18 +32,12 @@ class PauseScene(Scene):
         pass
     
     def render(self):
-        # Render previous scene first (game scene)
-        if len(self.scene_manager.scenes) > 1:
-            self.scene_manager.scenes[-2].render()
-        
-        # Draw semi-transparent overlay
-        self.renderer.draw_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, (0, 0, 0, 0.7))
+        # Simple approach: Just render pause screen
+        # (In a real implementation, you might want to snapshot the previous frame)
+        self.renderer.begin_frame()
         
         # Draw pause text
-        self.renderer.draw_rect(
-            WINDOW_WIDTH // 2 - 150,
-            WINDOW_HEIGHT // 2 - 50,
-            300,
-            100,
-            COLOR_YELLOW
-        )
+        self.renderer.draw_text("PAUSED", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40, 72, COLOR_YELLOW, centered=True)
+        self.renderer.draw_text("Press P or ESC to Resume", WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50, 32, COLOR_YELLOW, centered=True)
+        
+        self.renderer.end_frame()

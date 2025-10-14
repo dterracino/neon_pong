@@ -56,29 +56,18 @@ class MenuScene(Scene):
         
         # Draw title
         title_y = 150
-        self._draw_text("NEON PONG", WINDOW_WIDTH // 2 - 200, title_y, 72, COLOR_PINK)
+        self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, 72, COLOR_PINK, centered=True)
         
         # Draw menu options
         option_y = 350
         for i, option in enumerate(self.options):
             color = COLOR_YELLOW if i == self.selected_option else COLOR_CYAN
             y = option_y + i * 80
-            self._draw_text(option, WINDOW_WIDTH // 2 - 100, y, 48, color)
+            self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, 48, color, centered=True)
         
         # Draw controls
         controls_y = 550
-        self._draw_text("Player 1: W/S", 100, controls_y, 24, COLOR_CYAN)
-        self._draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, 24, COLOR_PINK)
+        self.renderer.draw_text("Player 1: W/S", 100, controls_y, 24, COLOR_CYAN)
+        self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, 24, COLOR_PINK)
         
         self.renderer.end_frame()
-    
-    def _draw_text(self, text: str, x: float, y: float, size: int, color: tuple):
-        """Draw text using pygame (rendered to surface then to OpenGL)"""
-        # This is a simplified version - in a real implementation,
-        # you'd want to render text to a texture and use shaders
-        # For now, we'll draw rectangles as placeholders for text
-        
-        # Draw a background rectangle for text visibility
-        char_width = size * 0.6
-        text_width = len(text) * char_width
-        self.renderer.draw_rect(x - 5, y - 5, text_width + 10, size + 10, color)
