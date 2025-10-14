@@ -12,7 +12,8 @@ from src.scenes.pause_scene import PauseScene
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
-    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW
+    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW,
+    FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 )
 
 
@@ -185,35 +186,17 @@ class GameScene(Scene):
             color = (*particle.color[:3], alpha)
             self.renderer.draw_circle(particle.x, particle.y, particle.size / 2, color)
         
-        # Draw scores (using rectangles as placeholder)
+        # Draw scores
         score_y = 50
-        self._draw_score(self.score1, WINDOW_WIDTH // 4, score_y, COLOR_CYAN)
-        self._draw_score(self.score2, WINDOW_WIDTH * 3 // 4, score_y, COLOR_PINK)
+        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, FONT_SIZE_LARGE, COLOR_CYAN, centered=True)
+        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
         
         # Draw game over message
         if self.game_over:
             msg_y = WINDOW_HEIGHT // 2 - 50
             color = COLOR_CYAN if self.winner == 1 else COLOR_PINK
-            self.renderer.draw_rect(
-                WINDOW_WIDTH // 2 - 200,
-                msg_y,
-                400,
-                100,
-                color
-            )
+            winner_text = f"PLAYER {self.winner} WINS!"
+            self.renderer.draw_text(winner_text, WINDOW_WIDTH // 2, msg_y, FONT_SIZE_LARGE, color, centered=True)
+            self.renderer.draw_text("Press ESC for Menu", WINDOW_WIDTH // 2, msg_y + 100, FONT_SIZE_DEFAULT, COLOR_YELLOW, centered=True)
         
         self.renderer.end_frame()
-    
-    def _draw_score(self, score: int, x: float, y: float, color: tuple):
-        """Draw score as blocks"""
-        # Simple visual representation of score
-        digit_width = 40
-        digit_height = 60
-        
-        score_str = str(score)
-        total_width = len(score_str) * (digit_width + 10)
-        start_x = x - total_width // 2
-        
-        for i, digit in enumerate(score_str):
-            digit_x = start_x + i * (digit_width + 10)
-            self.renderer.draw_rect(digit_x, y, digit_width, digit_height, color)

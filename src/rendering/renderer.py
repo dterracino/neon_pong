@@ -4,9 +4,10 @@ ModernGL renderer for game graphics
 import moderngl
 import numpy as np
 import pygame
-from typing import Tuple
+from typing import Tuple, Dict, Optional
 from src.managers.shader_manager import ShaderManager
 from src.rendering.post_process import PostProcessor
+from src.managers.asset_manager import AssetManager
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 
@@ -51,6 +52,17 @@ class Renderer:
         print(f"[DEBUG] Renderer.__init__: Creating scene framebuffer ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
         self.scene_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.scene_fbo = ctx.framebuffer(color_attachments=[self.scene_texture])
+        
+        # Initialize asset manager for fonts
+        self.asset_manager = AssetManager()
+        
+        # Text texture cache
+        self.text_texture_cache: Dict[tuple, moderngl.Texture] = {}
+        
+        # UI overlay texture for text (rendered after bloom)
+        self.ui_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
+        self.ui_fbo = ctx.framebuffer(color_attachments=[self.ui_texture])
+        
         print("[DEBUG] Renderer.__init__: Renderer initialization complete!")
         
     def begin_frame(self):
@@ -58,17 +70,24 @@ class Renderer:
         # Render to scene framebuffer
         self.scene_fbo.use()
         self.ctx.clear(0.05, 0.02, 0.15, 1.0)  # Dark purple background
+        
+        # Clear UI overlay
+        self.ui_fbo.use()
+        self.ctx.clear(0.0, 0.0, 0.0, 0.0)  # Transparent
+        
+        # Switch back to scene framebuffer for main rendering
+        self.scene_fbo.use()
     
     def end_frame(self):
         """End rendering and apply post-processing"""
-        # Apply bloom post-processing
+        # Apply bloom post-processing to scene
         final_texture = self.post_processor.apply_bloom(self.scene_texture)
         
         # Render to screen
         self.ctx.screen.use()
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
         
-        # Draw final texture to screen
+        # Draw bloomed scene to screen
         final_texture.use(0)
         if self.basic_program and 'tex' in self.basic_program:
             self.basic_program['tex'].value = 0
@@ -78,6 +97,20 @@ class Renderer:
             self.quad_vao.render(moderngl.TRIANGLE_STRIP)
         else:
             print("[ERROR] Renderer.end_frame: Cannot render - basic_program not loaded or 'tex' uniform missing!")
+            return
+        
+        # Draw UI overlay (text) on top, with alpha blending
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
+        self.ui_texture.use(0)
+        if self.basic_program and 'tex' in self.basic_program:
+            self.basic_program['tex'].value = 0
+            if 'color' in self.basic_program:
+                self.basic_program['color'].value = (1.0, 1.0, 1.0, 1.0)
+            self.quad_vao.render(moderngl.TRIANGLE_STRIP)
+        
+        self.ctx.disable(moderngl.BLEND)
     
     def draw_rect(self, x: float, y: float, width: float, height: float, color: Tuple[float, float, float, float]):
         """Draw a filled rectangle"""
@@ -157,3 +190,111 @@ class Renderer:
         # Cleanup
         vao.release()
         vbo.release()
+    
+    def draw_text(self, text: str, x: float, y: float, size: int, color: Tuple[float, float, float, float], 
+                  font_name: Optional[str] = None, centered: bool = False):
+        """Draw text using pygame fonts and OpenGL textures
+        
+        This method renders text to a UI overlay that is drawn AFTER the bloom effect,
+        ensuring text remains crisp and readable. Text is cached in textures for performance.
+        
+        Args:
+            text: Text to render
+            x: X position (left edge, or center if centered=True)
+            y: Y position (top edge)
+            size: Font size (use constants from src.utils.constants for consistency)
+            color: RGBA color tuple (0-1 range)
+            font_name: Font file name in assets/fonts/ (None for default pygame font)
+            centered: If True, text is centered at x position
+        
+        Example:
+            renderer.draw_text("HELLO", 400, 300, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
+        """
+        if not self.basic_program:
+            print("[ERROR] Renderer.draw_text: Cannot draw - basic_program not loaded!")
+            return
+        
+        # Convert color from 0-1 to 0-255 for pygame
+        pygame_color = (
+            int(color[0] * 255),
+            int(color[1] * 255),
+            int(color[2] * 255)
+        )
+        
+        # Create cache key
+        cache_key = (text, size, pygame_color, font_name)
+        
+        # Check cache
+        if cache_key not in self.text_texture_cache:
+            # Get font from asset manager
+            font = self.asset_manager.get_font(font_name, size)
+            
+            # Render text to pygame surface
+            text_surface = font.render(text, True, pygame_color)
+            text_width, text_height = text_surface.get_size()
+            
+            # Convert to RGBA
+            text_data = pygame.image.tostring(text_surface, 'RGBA', True)
+            
+            # Create OpenGL texture
+            text_texture = self.ctx.texture((text_width, text_height), 4, text_data)
+            text_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
+            
+            # Cache the texture
+            self.text_texture_cache[cache_key] = text_texture
+        else:
+            text_texture = self.text_texture_cache[cache_key]
+        
+        text_width, text_height = text_texture.size
+        
+        # Adjust x position if centered
+        if centered:
+            x = x - text_width / 2
+        
+        # Convert screen coordinates to NDC
+        ndc_x = (x / WINDOW_WIDTH) * 2 - 1
+        ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
+        ndc_width = (text_width / WINDOW_WIDTH) * 2
+        ndc_height = (text_height / WINDOW_HEIGHT) * 2
+        
+        # Create vertices for text rectangle
+        vertices = np.array([
+            ndc_x, ndc_y - ndc_height,
+            ndc_x + ndc_width, ndc_y - ndc_height,
+            ndc_x, ndc_y,
+            ndc_x + ndc_width, ndc_y,
+        ], dtype='f4')
+        
+        # Switch to UI framebuffer
+        current_fbo = self.ctx.fbo
+        self.ui_fbo.use()
+        
+        # Enable blending for text
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
+        # Create temporary VBO and VAO
+        vbo = self.ctx.buffer(vertices.tobytes())
+        vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
+        
+        # Bind text texture and set color uniform
+        text_texture.use(0)
+        if self.basic_program and 'tex' in self.basic_program:
+            self.basic_program['tex'].value = 0  # type: ignore[union-attr]
+        if self.basic_program and 'color' in self.basic_program:
+            # Use white color to render text texture as-is (text is already colored)
+            self.basic_program['color'].value = (1.0, 1.0, 1.0, color[3])  # type: ignore[union-attr]
+        
+        # Draw
+        vao.render(moderngl.TRIANGLE_STRIP)
+        
+        # Cleanup
+        vao.release()
+        vbo.release()
+        self.ctx.disable(moderngl.BLEND)
+        
+        # Restore previous framebuffer
+        if current_fbo:
+            current_fbo.use()
+        else:
+            self.scene_fbo.use()
