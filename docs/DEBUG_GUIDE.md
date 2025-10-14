@@ -19,7 +19,8 @@ When you run the game with `python main.py`, you will see detailed debug output 
 ### Issue: Black Screen on Startup
 
 **Debug Output to Check:**
-```
+
+```plaintext
 [DEBUG] Game.run: Starting main game loop...
 [DEBUG] Game.run: Frame 0, dt=0.0167
 [DEBUG] Game.run: Rendering scene: MenuScene
@@ -28,12 +29,14 @@ When you run the game with `python main.py`, you will see detailed debug output 
 If you see these messages, the game loop is running. Check for:
 
 **Shader Loading Errors:**
-```
+
+```plaintext
 [ERROR] ShaderManager.load_shader: Shader file not found: ...
 [ERROR] Renderer.__init__: Failed to load basic shader!
 ```
 
 **Solution:** Ensure the `shaders/` directory exists with all required shader files:
+
 - `basic.vert`
 - `basic.frag`
 - `bloom_extract.frag`
@@ -41,7 +44,8 @@ If you see these messages, the game loop is running. Check for:
 - `bloom_combine.frag`
 
 **Rendering Errors:**
-```
+
+```plaintext
 [ERROR] Renderer.draw_rect: Cannot draw - basic_program not loaded!
 [ERROR] Renderer.end_frame: Cannot render - basic_program not loaded or 'tex' uniform missing!
 ```
@@ -53,19 +57,20 @@ If you see these messages, the game loop is running. Check for:
 **Debug Output to Check:**
 Look for where initialization stops. For example:
 
-```
+```plaintext
 [DEBUG] Game.__init__: Creating window (1280x720)...
 Error running game: ...
 ```
 
 This indicates an issue creating the OpenGL window. Common causes:
+
 - Graphics drivers not installed
 - OpenGL 3.3 not supported
 - Display not available
 
 ### Issue: Audio Warnings
 
-```
+```plaintext
 [WARNING] Game.__init__: Failed to initialize pygame.mixer: ...
 [WARNING] Game.__init__: Continuing without audio...
 ```
@@ -76,14 +81,14 @@ This is normal if audio devices aren't available. The game will continue without
 
 If you see the game loop running but no scene updates:
 
-```
+```plaintext
 [DEBUG] Game.run: Frame 0, dt=0.0167
 [DEBUG] Game.run: Frame 0 complete
 ```
 
 But no "Updating scene" or "Rendering scene" messages, check:
 
-```
+```plaintext
 [DEBUG] SceneManager.push_scene: Scene stack size: 0
 ```
 
@@ -108,6 +113,7 @@ This shows what normal debug output looks like without actually running the game
 ## Disabling Debug Output
 
 To reduce console output, you can comment out or remove the `print()` statements with `[DEBUG]` prefix in:
+
 - `src/game.py`
 - `src/managers/shader_manager.py`
 - `src/managers/scene_manager.py`
@@ -119,6 +125,7 @@ To reduce console output, you can comment out or remove the `print()` statements
 ## Understanding Game Flow
 
 Normal startup sequence:
+
 1. Initialize pygame
 2. Create window with OpenGL context
 3. Initialize managers (asset, shader, audio)
@@ -131,6 +138,7 @@ Normal startup sequence:
 ## Getting Help
 
 When reporting issues, include:
+
 1. Full debug output from game startup
 2. Your operating system and graphics card
 3. Output from `python --version` and `pip list | grep -E "pygame|moderngl"`
