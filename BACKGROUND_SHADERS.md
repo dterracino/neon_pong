@@ -28,7 +28,17 @@ A smooth, flowing plasma effect with neon colors. Features:
 
 **Performance**: Very efficient, suitable for all hardware
 
-### 3. Solid (Fallback)
+### 3. Waves
+Animated wave patterns with a retro grid aesthetic. Features:
+- Horizontal and vertical wave animations
+- Cyan waves for positive peaks, pink for negative
+- Subtle grid overlay for retro feel
+- Smooth, rhythmic movement
+- Less busy than plasma, more dynamic than solid
+
+**Performance**: Very efficient, suitable for all hardware
+
+### 4. Solid (Fallback)
 A simple solid dark purple background, used when:
 - Background shaders are disabled
 - Shader compilation fails
@@ -40,12 +50,13 @@ Edit `src/utils/constants.py`:
 
 ```python
 # Background settings
-BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "solid"
+BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "solid"
 ```
 
 Change `BACKGROUND_TYPE` to one of:
 - `"starfield"` - Parallax starfield (default, recommended)
 - `"plasma"` - Smooth plasma effect
+- `"waves"` - Animated wave patterns with grid
 - `"solid"` - Solid color background
 
 ## Technical Details
@@ -62,7 +73,8 @@ begin_frame() → Render animated background → Clear scene → Render game obj
 
 - `shaders/background_starfield.frag` - Starfield fragment shader
 - `shaders/background_plasma.frag` - Plasma fragment shader
-- Both use `shaders/basic.vert` as the vertex shader
+- `shaders/background_waves.frag` - Wave pattern fragment shader
+- All use `shaders/basic.vert` as the vertex shader
 
 ### Uniforms
 

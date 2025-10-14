@@ -101,6 +101,10 @@ class Renderer:
             self.background_program = shader_manager.load_shader(
                 'background_plasma', 'basic.vert', 'background_plasma.frag'
             )
+        elif BACKGROUND_TYPE == "waves":
+            self.background_program = shader_manager.load_shader(
+                'background_waves', 'basic.vert', 'background_waves.frag'
+            )
         
         if self.background_program:
             self.background_vao = ctx.simple_vertex_array(

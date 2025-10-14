@@ -1,4 +1,7 @@
 #version 330
+// Plasma Background Shader
+// Creates a smooth flowing plasma effect with neon colors
+// Multiple sine waves create organic, hypnotic movement
 
 uniform float time;
 uniform vec2 resolution;

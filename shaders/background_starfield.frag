@@ -1,4 +1,7 @@
 #version 330
+// Starfield Background Shader
+// Creates a parallax starfield with multiple layers of moving stars
+// Features twinkling stars in neon colors and subtle nebula clouds
 
 uniform float time;
 uniform vec2 resolution;

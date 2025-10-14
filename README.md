@@ -6,6 +6,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 
 - 🎮 Classic Pong gameplay with modern graphics
 - ✨ Bloom post-processing effects using ModernGL
+- 🌌 **Shader-drawn animated backgrounds** (starfield, plasma, waves)
 - 🌈 Neon-vaporwave color scheme
 - 🎵 Sound effects and background music support
 - 🎯 Two-player local multiplayer
@@ -69,6 +70,8 @@ pong-moderngl/
 └── shaders/                     # GLSL shaders
     ├── basic.vert               # Basic vertex shader
     ├── basic.frag               # Basic fragment shader
+    ├── text.vert/frag           # Text rendering shaders
+    ├── background_*.frag        # Animated background shaders
     ├── bloom_extract.frag       # Bloom extraction
     ├── bloom_blur.frag          # Gaussian blur
     └── bloom_combine.frag       # Bloom combining
@@ -78,11 +81,22 @@ pong-moderngl/
 
 ### Graphics Pipeline
 
-1. **Scene Rendering**: Game objects rendered to framebuffer
-2. **Bloom Extraction**: Extract bright pixels above threshold
-3. **Gaussian Blur**: Multi-pass blur for glow effect
-4. **Combine**: Merge original scene with bloom
-5. **Display**: Final image to screen
+1. **Background Rendering**: Shader-drawn animated background
+2. **Scene Rendering**: Game objects rendered to framebuffer
+3. **Bloom Extraction**: Extract bright pixels above threshold
+4. **Gaussian Blur**: Multi-pass blur for glow effect
+5. **Combine**: Merge original scene with bloom
+6. **Display**: Final image to screen
+
+### Animated Backgrounds
+
+Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
+- **Starfield**: Parallax star layers with twinkling (default)
+- **Plasma**: Smooth flowing neon colors
+- **Waves**: Animated wave patterns with retro grid
+- **Solid**: Static background for maximum performance
+
+See [BACKGROUND_SHADERS.md](BACKGROUND_SHADERS.md) for details.
 
 ### Color Scheme
 

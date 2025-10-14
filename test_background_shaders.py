@@ -39,6 +39,20 @@ def test_shader_syntax():
         print("✗ Plasma shader file not found")
         tests_passed = False
     
+    # Check waves shader
+    waves_path = os.path.join(shader_dir, 'background_waves.frag')
+    if os.path.exists(waves_path):
+        with open(waves_path, 'r') as f:
+            content = f.read()
+            if '#version 330' in content and 'void main()' in content:
+                print("✓ Waves shader file is valid")
+            else:
+                print("✗ Waves shader file has syntax issues")
+                tests_passed = False
+    else:
+        print("✗ Waves shader file not found")
+        tests_passed = False
+    
     # Check that they have the required uniforms
     with open(starfield_path, 'r') as f:
         content = f.read()
@@ -56,6 +70,15 @@ def test_shader_syntax():
             print("✗ Plasma shader missing required uniforms")
             tests_passed = False
     
+    waves_path = os.path.join(shader_dir, 'background_waves.frag')
+    with open(waves_path, 'r') as f:
+        content = f.read()
+        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
+            print("✓ Waves shader has required uniforms")
+        else:
+            print("✗ Waves shader missing required uniforms")
+            tests_passed = False
+    
     return tests_passed
 
 def test_constants_updated():
@@ -64,7 +87,7 @@ def test_constants_updated():
     try:
         from src.utils.constants import BACKGROUND_TYPE
         print(f"✓ BACKGROUND_TYPE constant found: {BACKGROUND_TYPE}")
-        if BACKGROUND_TYPE in ["starfield", "plasma", "solid"]:
+        if BACKGROUND_TYPE in ["starfield", "plasma", "waves", "solid"]:
             print(f"✓ BACKGROUND_TYPE has valid value")
             return True
         else:
