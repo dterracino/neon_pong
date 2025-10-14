@@ -96,7 +96,7 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 - **Waves**: Animated wave patterns with retro grid
 - **Solid**: Static background for maximum performance
 
-See [BACKGROUND_SHADERS.md](BACKGROUND_SHADERS.md) for details.
+See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
 
 ### Color Scheme
 
