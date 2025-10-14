@@ -20,11 +20,12 @@ from src.utils.constants import (
 class GameScene(Scene):
     """Main game scene"""
     
-    def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager):
+    def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, ai_enabled: bool = False):
         print("[DEBUG] GameScene.__init__: Creating game scene...")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
+        self.ai_enabled = ai_enabled
         
         # Create entities
         print("[DEBUG] GameScene.__init__: Creating game entities...")
@@ -45,7 +46,7 @@ class GameScene(Scene):
         
         # Try to start game music
         # self.audio_manager.play_music('game_music.ogg')
-        print(f"[DEBUG] GameScene.__init__: Game scene created (paddle1: {self.paddle1.x},{self.paddle1.y}, ball: {self.ball.x},{self.ball.y})")
+        print(f"[DEBUG] GameScene.__init__: Game scene created (paddle1: {self.paddle1.x},{self.paddle1.y}, ball: {self.ball.x},{self.ball.y}, ai_enabled: {self.ai_enabled})")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -53,6 +54,23 @@ class GameScene(Scene):
                 # Pause game
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager)
                 self.scene_manager.push_scene(pause_scene)
+    
+    def _update_ai_paddle(self, dt: float):
+        """Update AI-controlled paddle to follow the ball"""
+        # Calculate paddle center and ball center
+        paddle_center_y = self.paddle2.y + self.paddle2.height / 2
+        ball_center_y = self.ball.y + self.ball.size / 2
+        
+        # AI reaction threshold - adds some imperfection
+        threshold = 10
+        
+        # Move paddle towards ball
+        if ball_center_y < paddle_center_y - threshold:
+            self.paddle2.move_up()
+        elif ball_center_y > paddle_center_y + threshold:
+            self.paddle2.move_down()
+        else:
+            self.paddle2.stop()
     
     def update(self, dt: float):
         if self.game_over:
@@ -63,7 +81,13 @@ class GameScene(Scene):
         
         # Update paddles
         self.paddle1.handle_input(keys)
-        self.paddle2.handle_input(keys)
+        
+        if self.ai_enabled:
+            # AI controls paddle2
+            self._update_ai_paddle(dt)
+        else:
+            # Human player controls paddle2
+            self.paddle2.handle_input(keys)
         
         self.paddle1.update(dt)
         self.paddle2.update(dt)
