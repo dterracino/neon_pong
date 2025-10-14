@@ -164,37 +164,34 @@ class Game:
                 self.scene_manager.current_scene.handle_event(event)
     
     def _render_fps_display(self):
-        """Render the FPS display overlay"""
+        """Render the FPS display overlay directly to screen"""
         instant, average, one_percent, point_one_percent = self.fps_counter.get_metrics()
         
         x = FPS_DISPLAY_POSITION_X
         y = FPS_DISPLAY_POSITION_Y
         line_height = FONT_SIZE_SMALL + 5
         
+        # We need to render directly after end_frame() has been called
+        # Use the renderer's direct text rendering capability
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
         # Render each metric if enabled in configuration
+        lines = []
         if FPS_DISPLAY_SHOW_INSTANT:
-            self.renderer.draw_text(
-                f"FPS: {instant:.1f}",
-                x, y, FONT_SIZE_SMALL, COLOR_YELLOW
-            )
-            y += line_height
-        
+            lines.append(f"FPS: {instant:.1f}")
         if FPS_DISPLAY_SHOW_AVERAGE:
-            self.renderer.draw_text(
-                f"Avg: {average:.1f}",
-                x, y, FONT_SIZE_SMALL, COLOR_YELLOW
-            )
-            y += line_height
-        
+            lines.append(f"Avg: {average:.1f}")
         if FPS_DISPLAY_SHOW_1_PERCENT:
-            self.renderer.draw_text(
-                f"1% Low: {one_percent:.1f}",
-                x, y, FONT_SIZE_SMALL, COLOR_YELLOW
-            )
-            y += line_height
-        
+            lines.append(f"1% Low: {one_percent:.1f}")
         if FPS_DISPLAY_SHOW_0_1_PERCENT:
-            self.renderer.draw_text(
-                f"0.1% Low: {point_one_percent:.1f}",
-                x, y, FONT_SIZE_SMALL, COLOR_YELLOW
+            lines.append(f"0.1% Low: {point_one_percent:.1f}")
+        
+        # Render all lines
+        for i, line in enumerate(lines):
+            self.renderer.draw_text_direct(
+                line, x, y + i * line_height, 
+                FONT_SIZE_SMALL, COLOR_YELLOW
             )
+        
+        self.ctx.disable(moderngl.BLEND)
