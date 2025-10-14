@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from src.managers.shader_manager import ShaderManager
 from src.rendering.post_process import PostProcessor
 from src.managers.asset_manager import AssetManager
-from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT
+from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_TYPE
 
 @dataclass
 class TextDrawCall:
@@ -89,8 +89,37 @@ class Renderer:
         self.ui_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.ui_fbo = ctx.framebuffer(color_attachments=[self.ui_texture])
 
+        # Load background shader based on configuration
+        print(f"[DEBUG] Renderer.__init__: Loading background shader ({BACKGROUND_TYPE})...")
+        self.background_program = None
+        self.background_enabled = BACKGROUND_TYPE != "solid"
+        if BACKGROUND_TYPE == "starfield":
+            self.background_program = shader_manager.load_shader(
+                'background_starfield', 'basic.vert', 'background_starfield.frag'
+            )
+        elif BACKGROUND_TYPE == "plasma":
+            self.background_program = shader_manager.load_shader(
+                'background_plasma', 'basic.vert', 'background_plasma.frag'
+            )
+        
+        if self.background_program:
+            self.background_vao = ctx.simple_vertex_array(
+                self.background_program, self.quad_vbo, 'in_position'
+            )
+            print(f"[DEBUG] Renderer.__init__: Background shader loaded successfully")
+        else:
+            self.background_enabled = False
+            print(f"[DEBUG] Renderer.__init__: Using solid background")
+        
+        # Time tracking for animated backgrounds
+        self.time = 0.0
+
         print("[DEBUG] Renderer.__init__: Renderer initialization complete!")
 
+    def update_time(self, dt: float):
+        """Update time for animated backgrounds"""
+        self.time += dt
+    
     def begin_frame(self):
         """Begin rendering a frame"""
         # Clear the text batch for the new frame
@@ -98,7 +127,16 @@ class Renderer:
 
         # Render to scene framebuffer
         self.scene_fbo.use()
-        self.ctx.clear(0.05, 0.02, 0.15, 1.0)  # Dark purple background
+        
+        if self.background_enabled and self.background_program:
+            # Render animated background
+            self.ctx.clear(0.0, 0.0, 0.0, 1.0)
+            self.background_program['time'] = self.time
+            self.background_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
+            self.background_vao.render(moderngl.TRIANGLE_STRIP)
+        else:
+            # Clear with solid color
+            self.ctx.clear(0.05, 0.02, 0.15, 1.0)  # Dark purple background
 
         # Clear UI overlay
         self.ui_fbo.use()

@@ -48,3 +48,6 @@ FONT_SIZE_LARGE = 72   # For titles and big messages
 FONT_SIZE_MEDIUM = 48  # For menu options
 FONT_SIZE_DEFAULT = 32 # Default text size
 FONT_SIZE_SMALL = 24   # For small text like controls
+
+# Background settings
+BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "solid"
