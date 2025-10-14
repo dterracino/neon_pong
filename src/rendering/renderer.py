@@ -27,6 +27,14 @@ class Renderer:
         else:
             print(f"[ERROR] Renderer.__init__: Failed to load basic shader!")
         
+        # Load text shader
+        print("[DEBUG] Renderer.__init__: Loading text shader...")
+        self.text_program = shader_manager.load_shader('text', 'text.vert', 'text.frag')
+        if self.text_program:
+            print(f"[DEBUG] Renderer.__init__: Text shader loaded successfully")
+        else:
+            print(f"[ERROR] Renderer.__init__: Failed to load text shader!")
+        
         # Create post processor
         print("[DEBUG] Renderer.__init__: Creating post processor...")
         self.post_processor = PostProcessor(ctx, shader_manager)
@@ -210,8 +218,8 @@ class Renderer:
         Example:
             renderer.draw_text("HELLO", 400, 300, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
         """
-        if not self.basic_program:
-            print("[ERROR] Renderer.draw_text: Cannot draw - basic_program not loaded!")
+        if not self.text_program:
+            print("[ERROR] Renderer.draw_text: Cannot draw - text_program not loaded!")
             return
         
         # Convert color from 0-1 to 0-255 for pygame
@@ -228,22 +236,27 @@ class Renderer:
         if cache_key not in self.text_texture_cache:
             # Get font from asset manager
             font = self.asset_manager.get_font(font_name, size)
+            print(f"[DEBUG] Renderer.draw_text: Rendering text '{text}' with font size {size}")
             
             # Render text to pygame surface
             text_surface = font.render(text, True, pygame_color)
             text_width, text_height = text_surface.get_size()
+            print(f"[DEBUG] Renderer.draw_text: Text surface size: {text_width}x{text_height}")
             
             # Convert to RGBA
             text_data = pygame.image.tostring(text_surface, 'RGBA', True)
+            print(f"[DEBUG] Renderer.draw_text: Text data size: {len(text_data)} bytes")
             
             # Create OpenGL texture
             text_texture = self.ctx.texture((text_width, text_height), 4, text_data)
             text_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
+            print(f"[DEBUG] Renderer.draw_text: Created texture: {text_texture.size}")
             
             # Cache the texture
             self.text_texture_cache[cache_key] = text_texture
         else:
             text_texture = self.text_texture_cache[cache_key]
+            print(f"[DEBUG] Renderer.draw_text: Using cached texture for '{text}'")
         
         text_width, text_height = text_texture.size
         
@@ -257,12 +270,17 @@ class Renderer:
         ndc_width = (text_width / WINDOW_WIDTH) * 2
         ndc_height = (text_height / WINDOW_HEIGHT) * 2
         
-        # Create vertices for text rectangle
+        # Create vertices for text rectangle with UV coordinates
+        # Vertices: position (x, y) + UV (u, v)
         vertices = np.array([
-            ndc_x, ndc_y - ndc_height,
-            ndc_x + ndc_width, ndc_y - ndc_height,
-            ndc_x, ndc_y,
-            ndc_x + ndc_width, ndc_y,
+            # Bottom-left
+            ndc_x, ndc_y - ndc_height, 0.0, 1.0,
+            # Bottom-right
+            ndc_x + ndc_width, ndc_y - ndc_height, 1.0, 1.0,
+            # Top-left
+            ndc_x, ndc_y, 0.0, 0.0,
+            # Top-right
+            ndc_x + ndc_width, ndc_y, 1.0, 0.0,
         ], dtype='f4')
         
         # Switch to UI framebuffer
@@ -273,17 +291,24 @@ class Renderer:
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
         
-        # Create temporary VBO and VAO
+        # Create temporary VBO and VAO with position and UV
         vbo = self.ctx.buffer(vertices.tobytes())
-        vao = self.ctx.simple_vertex_array(self.basic_program, vbo, 'in_position')
+        vao = self.ctx.vertex_array(
+            self.text_program,
+            [
+                (vbo, '2f 2f', 'in_position', 'in_uv')
+            ]
+        )
         
         # Bind text texture and set color uniform
         text_texture.use(0)
-        if self.basic_program and 'tex' in self.basic_program:
-            self.basic_program['tex'].value = 0  # type: ignore[union-attr]
-        if self.basic_program and 'color' in self.basic_program:
+        if self.text_program and 'tex' in self.text_program:
+            self.text_program['tex'].value = 0  # type: ignore[union-attr]
+        if self.text_program and 'color' in self.text_program:
             # Use white color to render text texture as-is (text is already colored)
-            self.basic_program['color'].value = (1.0, 1.0, 1.0, color[3])  # type: ignore[union-attr]
+            self.text_program['color'].value = (1.0, 1.0, 1.0, color[3])  # type: ignore[union-attr]
+        
+        print(f"[DEBUG] Renderer.draw_text: Drawing text '{text}' at ({x}, {y}) with NDC ({ndc_x:.2f}, {ndc_y:.2f}) size ({ndc_width:.2f}, {ndc_height:.2f})")
         
         # Draw
         vao.render(moderngl.TRIANGLE_STRIP)
