@@ -99,9 +99,9 @@ The display becomes more compact:
 
 The FPS display has minimal performance impact:
 
-- **When Hidden** (F3 off): ~0.01ms per frame (just a boolean check)
-- **When Visible** (F3 on): ~0.5-1ms per frame (text rendering)
-- **Memory**: ~8KB for 1 second window at 60 FPS
+- **When Hidden** (F3 off): Negligible (just a boolean check)
+- **When Visible** (F3 on): <0.1ms per frame (text rendering, conservative estimate)
+- **Memory**: ~1KB for 1 second window at 60 FPS
 
 ## Color Scheme
 

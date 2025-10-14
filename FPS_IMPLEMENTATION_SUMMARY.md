@@ -241,10 +241,10 @@ FPS_DISPLAY_POSITION_Y = 10
 
 ## Performance Impact
 
-- **Memory**: ~8KB per second of window (at 60 FPS)
+- **Memory**: ~1KB per second of window (60 frames × 16 bytes per entry at 60 FPS)
 - **CPU**: <0.1% overhead when visible
-- **Rendering**: ~0.5-1ms per frame when visible
-- **When Hidden**: Negligible (single boolean check)
+- **Rendering**: <0.1ms per frame when visible (conservative estimate, may be less)
+- **When Hidden**: Negligible overhead (single boolean check)
 
 ## Code Quality
 
