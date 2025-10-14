@@ -103,7 +103,7 @@ Added debug statements to track:
 
 ## Additional Files Created
 
-### 1. `test_debug_output.py`
+### 1. `tests/test_debug_output.py`
 
 A standalone script that demonstrates what the debug output looks like during normal operation. This is useful for:
 - Understanding the expected debug flow
@@ -181,7 +181,7 @@ Where:
 ## Testing
 
 The implementation has been tested with:
-1. Simulated execution via `test_debug_output.py` to verify expected debug flow
+1. Simulated execution via `tests/test_debug_output.py` to verify expected debug flow
 2. Partial initialization in headless environment (confirmed debug messages up to OpenGL context creation)
 3. Code review of debug message placement and formatting to ensure comprehensive coverage
 

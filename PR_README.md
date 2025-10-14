@@ -101,11 +101,11 @@ FONT_SIZE_SMALL = 24   # Small text
 ### Automated Tests
 ```bash
 # Font loading test
-python3 test_text_api.py
+python3 tests/test_text_api.py
 ✓ All tests pass
 
 # Full integration test (requires display)
-python3 test_text_rendering.py
+python3 tests/test_text_rendering.py
 ```
 
 ### Manual Testing Checklist
@@ -123,10 +123,10 @@ When running the game:
 
 Comprehensive documentation provided:
 
-1. **FINAL_SUMMARY.md** - Complete implementation overview
-2. **TEXT_RENDERING.md** - System guide with examples
-3. **IMPLEMENTATION_SUMMARY.md** - Technical architecture
-4. **VISUAL_COMPARISON.md** - Before/after comparison
+1. **docs/FINAL_SUMMARY.md** - Complete implementation overview
+2. **docs/TEXT_RENDERING.md** - System guide with examples
+3. **docs/IMPLEMENTATION_SUMMARY.md** - Technical architecture
+4. **docs/VISUAL_COMPARISON.md** - Before/after comparison
 
 ## 🔧 Usage Examples
 
@@ -218,12 +218,12 @@ None - all existing functionality preserved
 - `src/utils/constants.py` (+6 lines)
 
 ### Added (6 files)
-- `TEXT_RENDERING.md` (documentation)
-- `IMPLEMENTATION_SUMMARY.md` (documentation)
-- `VISUAL_COMPARISON.md` (documentation)
-- `FINAL_SUMMARY.md` (documentation)
-- `test_text_api.py` (test)
-- `test_text_rendering.py` (test)
+- `docs/TEXT_RENDERING.md` (documentation)
+- `docs/IMPLEMENTATION_SUMMARY.md` (documentation)
+- `docs/VISUAL_COMPARISON.md` (documentation)
+- `docs/FINAL_SUMMARY.md` (documentation)
+- `tests/test_text_api.py` (test)
+- `tests/test_text_rendering.py` (test)
 
 ### Total Changes
 - +994 additions

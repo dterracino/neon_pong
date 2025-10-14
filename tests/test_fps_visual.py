@@ -7,7 +7,7 @@ import os
 
 def test_fps_rendering_logic():
     """Test that FPS rendering method constructs proper text"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.fps_counter import FPSCounter
         from src.utils.constants import (
@@ -61,9 +61,9 @@ def test_fps_rendering_logic():
 
 def test_renderer_has_direct_draw():
     """Test that renderer has draw_text_direct method"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
-        renderer_path = os.path.join(os.path.dirname(__file__), 'src', 'rendering', 'renderer.py')
+        renderer_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'rendering', 'renderer.py')
         with open(renderer_path, 'r') as f:
             content = f.read()
             if 'def draw_text_direct' in content:
@@ -78,7 +78,7 @@ def test_renderer_has_direct_draw():
 
 def test_configuration_options():
     """Test configuration options work"""
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     try:
         from src.utils.constants import (
             FPS_DISPLAY_SHOW_INSTANT,

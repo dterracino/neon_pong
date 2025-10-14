@@ -75,8 +75,8 @@ When enabled (F3), the display appears like this:
 - ✅ `src/rendering/renderer.py` - Direct text rendering (~60 lines added)
 
 ### Test Coverage
-- ✅ `test_fps_counter.py` - Unit and integration tests (155 lines)
-- ✅ `test_fps_visual.py` - Visual/behavioral tests (133 lines)
+- ✅ `tests/test_fps_counter.py` - Unit and integration tests (155 lines)
+- ✅ `tests/test_fps_visual.py` - Visual/behavioral tests (133 lines)
 - ✅ All existing tests still pass
 - ✅ No breaking changes
 
@@ -115,11 +115,11 @@ All tests pass successfully:
 
 ```bash
 # Run all FPS tests
-python test_fps_counter.py
-python test_fps_visual.py
+python tests/test_fps_counter.py
+python tests/test_fps_visual.py
 
 # Verify no regressions
-python test_background_integration.py
+python tests/test_background_integration.py
 ```
 
 Output:
@@ -209,8 +209,8 @@ Potential improvements for future PRs:
 
 **New Files (5):**
 - `src/utils/fps_counter.py`
-- `test_fps_counter.py`
-- `test_fps_visual.py`
+- `tests/test_fps_counter.py`
+- `tests/test_fps_visual.py`
 - `FPS_DISPLAY.md`
 - `FPS_DISPLAY_DEMO.md`
 - `FPS_IMPLEMENTATION_SUMMARY.md`

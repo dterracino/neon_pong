@@ -172,10 +172,10 @@ Run the test suite to verify FPS display functionality:
 
 ```bash
 # Test FPS counter logic and integration
-python test_fps_counter.py
+python tests/test_fps_counter.py
 
 # Test visual output and configuration
-python test_fps_visual.py
+python tests/test_fps_visual.py
 ```
 
 ## Troubleshooting

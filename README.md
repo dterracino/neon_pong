@@ -39,9 +39,9 @@ python main.py
 
 ### Troubleshooting
 
-If the game displays a black screen or doesn't start properly, check the console output for debug messages. See [DEBUG_GUIDE.md](DEBUG_GUIDE.md) for detailed troubleshooting instructions.
+If the game displays a black screen or doesn't start properly, check the console output for debug messages. See [docs/DEBUG_GUIDE.md](docs/DEBUG_GUIDE.md) for detailed troubleshooting instructions.
 
-You can also run `python test_debug_output.py` to see what normal debug output should look like.
+You can also run `python tests/test_debug_output.py` to see what normal debug output should look like.
 
 ## Controls
 
@@ -96,7 +96,7 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 - **Waves**: Animated wave patterns with retro grid
 - **Solid**: Static background for maximum performance
 
-See [BACKGROUND_SHADERS.md](BACKGROUND_SHADERS.md) for details.
+See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
 
 ### Color Scheme
 
