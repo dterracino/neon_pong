@@ -33,6 +33,11 @@ class AssetManager:
         self.sounds_path = os.path.join(self.assets_path, 'sounds')
         self.music_path_dir = os.path.join(self.assets_path, 'music')
         
+        print(f"[DEBUG] AssetManager.__init__: Initializing asset manager")
+        print(f"[DEBUG] AssetManager.__init__: Base path: {self.base_path}")
+        print(f"[DEBUG] AssetManager.__init__: Assets path: {self.assets_path}")
+        print(f"[DEBUG] AssetManager.__init__: Fonts path: {self.fonts_path}")
+        
         # Create directories if they don't exist
         os.makedirs(self.fonts_path, exist_ok=True)
         os.makedirs(self.sounds_path, exist_ok=True)
@@ -47,11 +52,13 @@ class AssetManager:
                 if name and os.path.exists(os.path.join(self.fonts_path, name)):
                     font_path = os.path.join(self.fonts_path, name)
                     self.fonts[key] = pygame.font.Font(font_path, size)
+                    print(f"[DEBUG] AssetManager.get_font: Loaded font '{name}' at size {size}")
                 else:
                     # Use default font
                     self.fonts[key] = pygame.font.Font(None, size)
+                    print(f"[DEBUG] AssetManager.get_font: Using default pygame font at size {size}")
             except Exception as e:
-                print(f"Error loading font {name}: {e}")
+                print(f"[ERROR] AssetManager.get_font: Error loading font {name}: {e}")
                 self.fonts[key] = pygame.font.Font(None, size)
         
         return self.fonts[key]

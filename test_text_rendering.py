@@ -7,6 +7,7 @@ os.environ['SDL_AUDIODRIVER'] = 'dummy'
 
 import pygame
 import moderngl
+import numpy as np
 from src.managers.shader_manager import ShaderManager
 from src.rendering.renderer import Renderer
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_PINK, COLOR_CYAN, COLOR_YELLOW
@@ -49,10 +50,29 @@ def test_text_rendering():
     
     # Save a screenshot
     print("Saving screenshot...")
-    pygame.image.save(screen, "/tmp/text_rendering_test.png")
+    savepath = os.path.expanduser("~/tmp/text_rendering_test.png")
+    os.makedirs(os.path.dirname(savepath), exist_ok=True)
+    
+    # Read the screen buffer to check if it's all black
+    print("Checking screen buffer...")
+    buffer = ctx.screen.read(components=4)
+    pixels = np.frombuffer(buffer, dtype='u1')
+    
+    # Check if all pixels are black (or very dark)
+    non_black_pixels = np.sum(pixels > 10)
+    total_pixels = len(pixels)
+    print(f"Non-black pixel components: {non_black_pixels} / {total_pixels}")
+    
+    if non_black_pixels == 0:
+        print("[WARNING] Screen is completely black! Text rendering may not be working.")
+    else:
+        print(f"[SUCCESS] Screen has visible content ({non_black_pixels / total_pixels * 100:.1f}% non-black)")
+    
+    pygame.image.save(screen, savepath)
+    print(f"Screenshot saved to {savepath}")
     
     print("Text rendering test completed successfully!")
-    print("Textures cached:", len(renderer.text_texture_cache))
+    print(f"Textures cached: {len(renderer.text_texture_cache)}")
     
     pygame.quit()
 
