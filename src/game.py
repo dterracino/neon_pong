@@ -100,6 +100,9 @@ class Game:
             # Handle events
             self._handle_events()
             
+            # Update renderer time for animated backgrounds
+            self.renderer.update_time(self.dt)
+            
             # Update current scene
             if self.scene_manager.current_scene:
                 if frame_count < 5:
