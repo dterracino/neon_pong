@@ -52,24 +52,20 @@ def test_pygame_text_rendering():
         surface.blit(text_surface, text_rect)
     
     # Save to file
-    output_path = "/tmp/pygame_text_test.png"
+    import tempfile
+    output_path = os.path.join(tempfile.gettempdir(), "pygame_text_test.png")
     pygame.image.save(surface, output_path)
     print(f"✓ Saved test image to {output_path}")
     
     # Check if any non-background pixels exist
+    import numpy as np
     pixel_data = pygame.surfarray.array3d(surface)
-    background_color = (13, 5, 38)
+    background_color = np.array([13, 5, 38])
     
-    # Count non-background pixels
-    non_bg_pixels = 0
+    # Count non-background pixels (efficient numpy operation)
+    non_bg_mask = np.any(pixel_data != background_color, axis=2)
+    non_bg_pixels = np.count_nonzero(non_bg_mask)
     total_pixels = width * height
-    for x in range(width):
-        for y in range(height):
-            pixel = pixel_data[x][y]
-            if not (pixel[0] == background_color[0] and 
-                   pixel[1] == background_color[1] and 
-                   pixel[2] == background_color[2]):
-                non_bg_pixels += 1
     
     print(f"\nPixel analysis:")
     print(f"  Total pixels: {total_pixels}")

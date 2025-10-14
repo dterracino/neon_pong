@@ -185,7 +185,7 @@ By passing UV coordinates explicitly, we can position and size quads anywhere on
 When testing on a machine with OpenGL support:
 
 1. Run `test_text_rendering.py`
-2. Check that `~/tmp/text_rendering_test.png` contains visible text
+2. Check that the output image (saved to `~/tmp/text_rendering_test.png` on Unix or equivalent on Windows) contains visible text
 3. Verify text is colored (not black/white)
 4. Verify background is dark purple
 5. Run the main game and check menu text is visible
