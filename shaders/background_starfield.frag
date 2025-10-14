@@ -30,7 +30,9 @@ float noise(vec2 p) {
 
 void main() {
     // Create multiple layers of stars with parallax effect
+    // Use resolution to maintain aspect ratio
     vec2 coord = uv;
+    coord.x *= resolution.x / resolution.y;  // Correct for aspect ratio
     vec3 color = vec3(0.0);
     
     // Background gradient - dark purple to darker purple
