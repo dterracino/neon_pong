@@ -1,6 +1,7 @@
 """
 Main game class handling initialization and game loop
 """
+import logging
 import pygame
 import moderngl
 from src.managers.scene_manager import SceneManager
@@ -18,27 +19,29 @@ from src.utils.constants import (
     FONT_SIZE_SMALL, COLOR_YELLOW
 )
 
+logger = logging.getLogger(__name__)
+
 
 class Game:
     """Main game class"""
     
     def __init__(self):
         """Initialize the game"""
-        print("[DEBUG] Game.__init__: Starting game initialization...")
+        logger.debug("Starting game initialization")
         
         # Initialize Pygame
-        print("[DEBUG] Game.__init__: Initializing pygame...")
+        logger.debug("Initializing pygame")
         pygame.init()
-        print("[DEBUG] Game.__init__: Initializing pygame.mixer...")
+        logger.debug("Initializing pygame.mixer")
         try:
             pygame.mixer.init()
-            print("[DEBUG] Game.__init__: pygame.mixer initialized successfully")
+            logger.debug("pygame.mixer initialized successfully")
         except Exception as e:
-            print(f"[WARNING] Game.__init__: Failed to initialize pygame.mixer: {e}")
-            print("[WARNING] Game.__init__: Continuing without audio...")
+            logger.warning("Failed to initialize pygame.mixer: %s", e)
+            logger.warning("Continuing without audio")
         
         # Create window with OpenGL context
-        print("[DEBUG] Game.__init__: Setting OpenGL attributes...")
+        logger.debug("Setting OpenGL attributes")
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
         pygame.display.gl_set_attribute(
@@ -48,54 +51,54 @@ class Game:
         # Disable VSync for maximum frame rate
         pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 0)
         
-        print(f"[DEBUG] Game.__init__: Creating window ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
+        logger.debug("Creating window (%dx%d)", WINDOW_WIDTH, WINDOW_HEIGHT)
         self.screen = pygame.display.set_mode(
             (WINDOW_WIDTH, WINDOW_HEIGHT),
             pygame.OPENGL | pygame.DOUBLEBUF
         )
         pygame.display.set_caption(WINDOW_TITLE)
-        print("[DEBUG] Game.__init__: Window created successfully")
+        logger.debug("Window created successfully")
         
         # Create ModernGL context
-        print("[DEBUG] Game.__init__: Creating ModernGL context...")
+        logger.debug("Creating ModernGL context")
         self.ctx = moderngl.create_context()
-        print(f"[DEBUG] Game.__init__: ModernGL context created: {self.ctx}")
-        print("[DEBUG] Game.__init__: Enabling blending...")
+        logger.debug("ModernGL context created: %s", self.ctx)
+        logger.debug("Enabling blending")
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
         
         # Initialize managers (singleton pattern)
-        print("[DEBUG] Game.__init__: Initializing asset manager...")
+        logger.debug("Initializing asset manager")
         self.asset_manager = AssetManager()
         
         # Preload all assets
-        print("[DEBUG] Game.__init__: Preloading assets...")
+        logger.debug("Preloading assets")
         
         def on_assets_loaded(sounds: int, music: int, fonts: int):
             """Called when asset loading completes"""
-            print(f"[INFO] Asset loading complete: {sounds} sounds, {music} music, {fonts} fonts")
+            logger.info("Asset loading complete: %d sounds, %d music, %d fonts", sounds, music, fonts)
         
         sounds, music, fonts = self.asset_manager.preload_assets(on_complete=on_assets_loaded)
-        print(f"[DEBUG] Game.__init__: Assets preloaded successfully")
+        logger.debug("Assets preloaded successfully")
         
-        print("[DEBUG] Game.__init__: Initializing shader manager...")
+        logger.debug("Initializing shader manager")
         self.shader_manager = ShaderManager(self.ctx)
-        print("[DEBUG] Game.__init__: Initializing audio manager...")
+        logger.debug("Initializing audio manager")
         self.audio_manager = AudioManager(self.asset_manager)
         
         # Initialize renderer
-        print("[DEBUG] Game.__init__: Initializing renderer...")
+        logger.debug("Initializing renderer")
         self.renderer = Renderer(self.ctx, self.shader_manager)
-        print("[DEBUG] Game.__init__: Renderer initialized successfully")
+        logger.debug("Renderer initialized successfully")
         
         # Initialize scene manager
-        print("[DEBUG] Game.__init__: Initializing scene manager...")
+        logger.debug("Initializing scene manager")
         self.scene_manager = SceneManager()
         
         # Start with menu scene
-        print("[DEBUG] Game.__init__: Creating initial menu scene...")
+        logger.debug("Creating initial menu scene")
         initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager)
-        print("[DEBUG] Game.__init__: Pushing menu scene to scene manager...")
+        logger.debug("Pushing menu scene to scene manager")
         self.scene_manager.push_scene(initial_scene)
         
         # Game loop variables
@@ -104,15 +107,15 @@ class Game:
         self.dt = 0
         
         # Initialize FPS counter
-        print("[DEBUG] Game.__init__: Initializing FPS counter...")
+        logger.debug("Initializing FPS counter")
         self.fps_counter = FPSCounter(average_window=FPS_DISPLAY_AVERAGE_WINDOW)
-        print("[DEBUG] Game.__init__: FPS counter initialized")
+        logger.debug("FPS counter initialized")
         
-        print("[DEBUG] Game.__init__: Game initialization complete!")
+        logger.debug("Game initialization complete")
         
     def run(self):
         """Main game loop"""
-        print("[DEBUG] Game.run: Starting main game loop...")
+        logger.debug("Starting main game loop")
         frame_count = 0
         while self.running:
             # Calculate delta time
@@ -122,7 +125,7 @@ class Game:
             self.fps_counter.update(self.dt)
             
             if frame_count < 5:  # Only log first 5 frames to avoid spam
-                print(f"[DEBUG] Game.run: Frame {frame_count}, dt={self.dt:.4f}")
+                logger.debug("Frame %d, dt=%.4f", frame_count, self.dt)
             
             # Handle events
             self._handle_events()
@@ -133,13 +136,13 @@ class Game:
             # Update current scene
             if self.scene_manager.current_scene:
                 if frame_count < 5:
-                    print(f"[DEBUG] Game.run: Updating scene: {type(self.scene_manager.current_scene).__name__}")
+                    logger.debug("Updating scene: %s", type(self.scene_manager.current_scene).__name__)
                 self.scene_manager.current_scene.update(self.dt)
             
             # Render current scene
             if self.scene_manager.current_scene:
                 if frame_count < 5:
-                    print(f"[DEBUG] Game.run: Rendering scene: {type(self.scene_manager.current_scene).__name__}")
+                    logger.debug("Rendering scene: %s", type(self.scene_manager.current_scene).__name__)
                 self.scene_manager.current_scene.render()
             
             # Render FPS display if enabled
@@ -150,27 +153,27 @@ class Game:
             pygame.display.flip()
             
             if frame_count < 5:
-                print(f"[DEBUG] Game.run: Frame {frame_count} complete")
+                logger.debug("Frame %d complete", frame_count)
             
             frame_count += 1
             
             # Check if we should quit
             if not self.scene_manager.current_scene:
                 self.running = False
-                print("[DEBUG] Game.run: No current scene, exiting game loop")
+                logger.debug("No current scene, exiting game loop")
     
     def _handle_events(self):
         """Handle pygame events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                print("[DEBUG] Game._handle_events: QUIT event received")
+                logger.debug("QUIT event received")
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F3:
                     # Toggle FPS display
                     self.fps_counter.toggle_visibility()
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
-                    print(f"[DEBUG] Game._handle_events: FPS display {status}")
+                    logger.debug("FPS display %s", status)
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:

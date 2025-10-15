@@ -2,9 +2,12 @@
 Asset manager for loading and caching game assets
 """
 import os
+import logging
 import pygame
 from typing import Dict, Optional, Callable, Tuple
 from src.utils.constants import FONT_SIZE_SMALL, FONT_SIZE_DEFAULT, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE
+
+logger = logging.getLogger(__name__)
 
 
 class AssetManager:
@@ -36,12 +39,12 @@ class AssetManager:
         self.sounds_path = os.path.join(self.assets_path, 'sounds')
         self.music_path = os.path.join(self.assets_path, 'music')
         
-        print(f"[DEBUG] AssetManager.__init__: Initializing asset manager")
-        print(f"[DEBUG] AssetManager.__init__: Base path: {self.base_path}")
-        print(f"[DEBUG] AssetManager.__init__: Assets path: {self.assets_path}")
-        print(f"[DEBUG] AssetManager.__init__: Fonts path: {self.fonts_path}")
-        print(f"[DEBUG] AssetManager.__init__: Sounds path: {self.sounds_path}")
-        print(f"[DEBUG] AssetManager.__init__: Music path: {self.music_path}")
+        logger.debug("Initializing asset manager")
+        logger.debug("Base path: %s", self.base_path)
+        logger.debug("Assets path: %s", self.assets_path)
+        logger.debug("Fonts path: %s", self.fonts_path)
+        logger.debug("Sounds path: %s", self.sounds_path)
+        logger.debug("Music path: %s", self.music_path)
         
         # Create directories if they don't exist
         os.makedirs(self.assets_path, exist_ok=True)
@@ -58,13 +61,13 @@ class AssetManager:
                 if name and os.path.exists(os.path.join(self.fonts_path, name)):
                     font_path = os.path.join(self.fonts_path, name)
                     self.fonts[key] = pygame.font.Font(font_path, size)
-                    print(f"[DEBUG] AssetManager.get_font: Loaded font '{name}' at size {size}")
+                    logger.debug("Loaded font '%s' at size %d", name, size)
                 else:
                     # Use default font
                     self.fonts[key] = pygame.font.Font(None, size)
-                    print(f"[DEBUG] AssetManager.get_font: Using default pygame font at size {size}")
+                    logger.debug("Using default pygame font at size %d", size)
             except Exception as e:
-                print(f"[ERROR] AssetManager.get_font: Error loading font {name}: {e}")
+                logger.error("Error loading font %s: %s", name, e)
                 self.fonts[key] = pygame.font.Font(None, size)
 
         
@@ -79,7 +82,7 @@ class AssetManager:
         sound_path = os.path.join(self.sounds_path, filename)
         
         if not os.path.exists(sound_path):
-            print(f"[WARNING] AssetManager.load_sound: Sound not found: {sound_path}")
+            logger.warning("Sound not found: %s", sound_path)
             return None
         
         try:
@@ -87,10 +90,10 @@ class AssetManager:
             name = os.path.splitext(filename)[0].lower()
             sound = pygame.mixer.Sound(sound_path)
             self.sounds[name] = sound
-            print(f"[DEBUG] AssetManager.load_sound: Loaded sound '{name}' from {filename}")
+            logger.debug("Loaded sound '%s' from %s", name, filename)
             return sound
         except Exception as e:
-            print(f"[ERROR] AssetManager.load_sound: Error loading sound {filename}: {e}")
+            logger.error("Error loading sound %s: %s", filename, e)
             return None
     
     def get_music_path(self, name: str) -> Optional[str]:
@@ -107,16 +110,16 @@ class AssetManager:
             music_file_path = os.path.join(self.music_path, name_or_filename)
         
         if not os.path.exists(music_file_path):
-            print(f"[WARNING] AssetManager.load_music: Music not found: {music_file_path}")
+            logger.warning("Music not found: %s", music_file_path)
             return False
         
         try:
             pygame.mixer.music.load(music_file_path)
             self.current_music_path = music_file_path  # Track currently loaded music
-            print(f"[DEBUG] AssetManager.load_music: Loaded music from {music_file_path}")
+            logger.debug("Loaded music from %s", music_file_path)
             return True
         except Exception as e:
-            print(f"[ERROR] AssetManager.load_music: Error loading music {name_or_filename}: {e}")
+            logger.error("Error loading music %s: %s", name_or_filename, e)
             return False
     
     def preload_music(self) -> int:
@@ -126,7 +129,7 @@ class AssetManager:
             Number of music files registered
         """
         if not os.path.exists(self.music_path):
-            print(f"[DEBUG] AssetManager.preload_music: Music path does not exist: {self.music_path}")
+            logger.debug("Music path does not exist: %s", self.music_path)
             return 0
         
         # Get all music files (common audio formats)
@@ -135,19 +138,19 @@ class AssetManager:
                       if f.lower().endswith(music_extensions)]
         
         if not music_files:
-            print(f"[DEBUG] AssetManager.preload_music: No music files found in {self.music_path}")
+            logger.debug("No music files found in %s", self.music_path)
             return 0
         
-        print(f"[DEBUG] AssetManager.preload_music: Found {len(music_files)} music files...")
+        logger.debug("Found %d music files", len(music_files))
         
         for music_file in music_files:
             # Get name without extension
             name = os.path.splitext(music_file)[0].lower()
             file_path = os.path.join(self.music_path, music_file)
             self.music_files[name] = file_path
-            print(f"[DEBUG] AssetManager.preload_music: Registered music '{name}' -> {music_file}")
+            logger.debug("Registered music '%s' -> %s", name, music_file)
         
-        print(f"[DEBUG] AssetManager.preload_music: Registered {len(self.music_files)} music files")
+        logger.debug("Registered %d music files", len(self.music_files))
         return len(self.music_files)
     
     def preload_sounds(self) -> int:
@@ -157,7 +160,7 @@ class AssetManager:
             Number of sounds loaded
         """
         if not os.path.exists(self.sounds_path):
-            print(f"[DEBUG] AssetManager.preload_sounds: Sounds path does not exist: {self.sounds_path}")
+            logger.debug("Sounds path does not exist: %s", self.sounds_path)
             return 0
         
         # Get all sound files (common audio formats)
@@ -166,15 +169,15 @@ class AssetManager:
                       if f.lower().endswith(sound_extensions)]
         
         if not sound_files:
-            print(f"[DEBUG] AssetManager.preload_sounds: No sound files found in {self.sounds_path}")
+            logger.debug("No sound files found in %s", self.sounds_path)
             return 0
         
-        print(f"[DEBUG] AssetManager.preload_sounds: Loading {len(sound_files)} sound files...")
+        logger.debug("Loading %d sound files", len(sound_files))
         
         for sound_file in sound_files:
             self.load_sound(sound_file)
         
-        print(f"[DEBUG] AssetManager.preload_sounds: Loaded {len(self.sounds)} sounds")
+        logger.debug("Loaded %d sounds", len(self.sounds))
         return len(self.sounds)
     
     def preload_fonts(self, sizes: Optional[list] = None) -> int:
@@ -191,7 +194,7 @@ class AssetManager:
             sizes = [FONT_SIZE_SMALL, FONT_SIZE_DEFAULT, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
         
         if not os.path.exists(self.fonts_path):
-            print(f"[DEBUG] AssetManager.preload_fonts: Fonts path does not exist: {self.fonts_path}")
+            logger.debug("Fonts path does not exist: %s", self.fonts_path)
             return 0
         
         # Get all font files in the fonts directory
@@ -199,20 +202,20 @@ class AssetManager:
                      if f.lower().endswith(('.ttf', '.otf', '.fon'))]
         
         if not font_files:
-            print(f"[DEBUG] AssetManager.preload_fonts: No fonts found in {self.fonts_path}")
+            logger.debug("No fonts found in %s", self.fonts_path)
             return 0
 
-        print(f"[DEBUG] AssetManager.preload_fonts: Preloading {len(font_files)} fonts at {len(sizes)} sizes...")
+        logger.debug("Preloading %d fonts at %d sizes", len(font_files), len(sizes))
 
         for font_file in font_files:
             for size in sizes:
                 try:
                     self.get_font(font_file, size)
-                    print(f"[DEBUG] AssetManager.preload_fonts: Preloaded {font_file} at size {size}")
+                    logger.debug("Preloaded %s at size %d", font_file, size)
                 except Exception as e:
-                    print(f"[ERROR] AssetManager.preload_fonts: Failed to preload {font_file} at size {size}: {e}")
+                    logger.error("Failed to preload %s at size %d: %s", font_file, size, e)
 
-        print(f"[DEBUG] AssetManager.preload_fonts: Preloaded {len(self.fonts)} font/size combinations")
+        logger.debug("Preloaded %d font/size combinations", len(self.fonts))
         return len(self.fonts)
     
     @property
@@ -232,24 +235,28 @@ class AssetManager:
         Returns:
             Tuple of (sounds_loaded, music_registered, fonts_loaded)
         """
-        print("[DEBUG] AssetManager.preload_assets: Starting asset preloading...")
+        logger.debug("Starting asset preloading")
         self._is_preloading = True
         
         try:
             # Load sounds
-            print("[DEBUG] AssetManager.preload_assets: Loading sounds...")
+            logger.debug("Loading sounds...")
             sounds_loaded = self.preload_sounds()
             
             # Register music files
-            print("[DEBUG] AssetManager.preload_assets: Registering music...")
+            logger.debug("Registering music...")
             music_registered = self.preload_music()
             
             # Load fonts
-            print("[DEBUG] AssetManager.preload_assets: Loading fonts...")
+            logger.debug("Loading fonts...")
             fonts_loaded = self.preload_fonts(sizes=font_sizes)
             
-            print(f"[DEBUG] AssetManager.preload_assets: Asset preloading complete!")
-            print(f"[DEBUG] AssetManager.preload_assets: Loaded {sounds_loaded} sounds, {music_registered} music, {fonts_loaded} font combinations")
+            logger.debug("Asset preloading complete")
+            logger.debug("Loaded %d sounds, %d music, %d font combinations", 
+                        sounds_loaded, music_registered, fonts_loaded)
+            
+            if on_complete:
+                on_complete(sounds_loaded, music_registered, fonts_loaded)
             
             return (sounds_loaded, music_registered, fonts_loaded)
             

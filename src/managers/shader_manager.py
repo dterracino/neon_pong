@@ -1,34 +1,37 @@
 """
 Shader manager for loading and compiling GLSL shaders
 """
+import logging
 import os
 from typing import Dict, Optional
 import moderngl
+
+logger = logging.getLogger(__name__)
 
 
 class ShaderManager:
     """Manages shader loading and compilation"""
     
     def __init__(self, ctx: moderngl.Context):
-        print("[DEBUG] ShaderManager.__init__: Initializing shader manager...")
+        logger.debug("Initializing shader manager")
         self.ctx = ctx
         self.programs: Dict[str, moderngl.Program] = {}
         
         # Base paths
         self.base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.shaders_path = os.path.join(self.base_path, 'shaders')
-        print(f"[DEBUG] ShaderManager.__init__: Shaders path: {self.shaders_path}")
+        logger.debug("Shaders path: %s", self.shaders_path)
         
         # Create shaders directory if it doesn't exist
         os.makedirs(self.shaders_path, exist_ok=True)
-        print("[DEBUG] ShaderManager.__init__: Shader manager initialized")
+        logger.debug("Shader manager initialized")
     
     def load_shader(self, name: str, vertex_file: str, fragment_file: str) -> Optional[moderngl.Program]:
         """Load and compile a shader program"""
-        print(f"[DEBUG] ShaderManager.load_shader: Loading shader '{name}' (vert: {vertex_file}, frag: {fragment_file})...")
+        logger.debug("Loading shader '%s' (vert: %s, frag: %s)", name, vertex_file, fragment_file)
         
         if name in self.programs:
-            print(f"[DEBUG] ShaderManager.load_shader: Shader '{name}' already loaded, returning cached version")
+            logger.debug("Shader '%s' already loaded, returning cached version", name)
             return self.programs[name]
         
         try:
@@ -36,34 +39,32 @@ class ShaderManager:
             vertex_path = os.path.join(self.shaders_path, vertex_file)
             fragment_path = os.path.join(self.shaders_path, fragment_file)
             
-            print(f"[DEBUG] ShaderManager.load_shader: Reading vertex shader from: {vertex_path}")
+            logger.debug("Reading vertex shader from: %s", vertex_path)
             with open(vertex_path, 'r') as f:
                 vertex_source = f.read()
-            print(f"[DEBUG] ShaderManager.load_shader: Vertex shader read successfully ({len(vertex_source)} chars)")
+            logger.debug("Vertex shader read successfully (%d chars)", len(vertex_source))
             
-            print(f"[DEBUG] ShaderManager.load_shader: Reading fragment shader from: {fragment_path}")
+            logger.debug("Reading fragment shader from: %s", fragment_path)
             with open(fragment_path, 'r') as f:
                 fragment_source = f.read()
-            print(f"[DEBUG] ShaderManager.load_shader: Fragment shader read successfully ({len(fragment_source)} chars)")
+            logger.debug("Fragment shader read successfully (%d chars)", len(fragment_source))
             
             # Compile and link program
-            print(f"[DEBUG] ShaderManager.load_shader: Compiling shader program '{name}'...")
+            logger.debug("Compiling shader program '%s'", name)
             program = self.ctx.program(
                 vertex_shader=vertex_source,
                 fragment_shader=fragment_source
             )
             
             self.programs[name] = program
-            print(f"[DEBUG] ShaderManager.load_shader: Shader '{name}' compiled and loaded successfully!")
+            logger.debug("Shader '%s' compiled and loaded successfully", name)
             return program
             
         except FileNotFoundError as e:
-            print(f"[ERROR] ShaderManager.load_shader: Shader file not found: {e}")
+            logger.error("Shader file not found: %s", e)
             return None
         except Exception as e:
-            print(f"[ERROR] ShaderManager.load_shader: Error compiling shader {name}: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("Error compiling shader %s: %s", name, e)
             return None
     
     def get_program(self, name: str) -> Optional[moderngl.Program]:

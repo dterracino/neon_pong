@@ -5,11 +5,14 @@ Provides intelligent paddle control with multiple difficulty levels.
 Features human-like behavior including reaction delays, prediction errors,
 and adaptive difficulty.
 """
+import logging
 import random
 from typing import Optional
 from src.entities.paddle import Paddle
 from src.entities.ball import Ball
 from src.utils.constants import WINDOW_HEIGHT, PADDLE_SPEED
+
+logger = logging.getLogger(__name__)
 
 
 class PongAI:
@@ -45,8 +48,8 @@ class PongAI:
         self.update_timer = 0.0
         self.is_reacting = False
         
-        print(f"[DEBUG] PongAI.__init__: AI initialized with difficulty '{difficulty}'")
-        print(f"[DEBUG] PongAI.__init__: Config: {self.config}")
+        logger.debug("AI initialized with difficulty '%s'", difficulty)
+        logger.debug("AI config: %s", self.config)
     
     def update(self, dt: float):
         """Update AI decision making and paddle control
@@ -188,14 +191,14 @@ class PongAI:
             self.config['speed_multiplier'] = min(1.0, self.config['speed_multiplier'] + 0.05)
             self.config['prediction_error'] = max(10, self.config['prediction_error'] - 5)
             self.config['reaction_time'] = max(0.05, self.config['reaction_time'] - 0.02)
-            print(f"[DEBUG] PongAI: Increased difficulty (player ahead by {score_diff})")
+            logger.debug("Increased difficulty (player ahead by %d)", score_diff)
         
         # AI winning by 3+ points - make AI easier
         elif score_diff <= -3:
             self.config['speed_multiplier'] = max(0.5, self.config['speed_multiplier'] - 0.05)
             self.config['prediction_error'] = min(100, self.config['prediction_error'] + 10)
             self.config['reaction_time'] = min(0.5, self.config['reaction_time'] + 0.02)
-            print(f"[DEBUG] PongAI: Decreased difficulty (AI ahead by {abs(score_diff)})")
+            logger.debug("Decreased difficulty (AI ahead by %d)", abs(score_diff))
     
     def reset(self):
         """Reset AI state (call when ball resets)"""

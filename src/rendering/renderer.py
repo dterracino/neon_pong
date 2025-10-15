@@ -1,6 +1,7 @@
 """
 ModernGL renderer for game graphics
 """
+import logging
 import moderngl
 import numpy as np
 import pygame
@@ -10,6 +11,8 @@ from src.managers.shader_manager import ShaderManager
 from src.rendering.post_process import PostProcessor
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_TYPE
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TextDrawCall:
@@ -27,26 +30,26 @@ class Renderer:
     """Handles all ModernGL rendering"""
 
     def __init__(self, ctx: moderngl.Context, shader_manager: ShaderManager):
-        print("[DEBUG] Renderer.__init__: Initializing renderer...")
+        logger.debug("Initializing renderer")
         self.ctx = ctx
         self.shader_manager = shader_manager
 
         # Load basic shader
-        print("[DEBUG] Renderer.__init__: Loading basic shader...")
+        logger.debug("Loading basic shader")
         basic_program_maybe = shader_manager.load_shader('basic', 'basic.vert', 'basic.frag')
         assert basic_program_maybe is not None, "Failed to load basic shader!"
         self.basic_program = basic_program_maybe
-        print(f"[DEBUG] Renderer.__init__: Basic shader loaded successfully")
+        logger.debug("Basic shader loaded successfully")
 
         # Load text shader
-        print("[DEBUG] Renderer.__init__: Loading text shader...")
+        logger.debug("Loading text shader")
         text_program_maybe = shader_manager.load_shader('text', 'text.vert', 'text.frag')
         assert text_program_maybe is not None, "Failed to load text shader!"
         self.text_program = text_program_maybe
-        print(f"[DEBUG] Renderer.__init__: Text shader loaded successfully")
+        logger.debug("Text shader loaded successfully")
 
         # Create post processor
-        print("[DEBUG] Renderer.__init__: Creating post processor...")
+        logger.debug("Creating post processor")
         self.post_processor = PostProcessor(ctx, shader_manager)
 
         # --- Batching setup for Text ---
@@ -58,7 +61,7 @@ class Renderer:
             self.text_program,
             [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
         )
-        print("[DEBUG] Renderer.__init__: Text batching VBO/VAO created")
+        logger.debug("Text batching VBO/VAO created")
 
         # Create vertex buffer for a quad
         vertices = np.array([
@@ -70,15 +73,15 @@ class Renderer:
 
         self.quad_vbo = ctx.buffer(vertices.tobytes())
         self.quad_vao = ctx.simple_vertex_array(self.basic_program, self.quad_vbo, 'in_position')
-        print("[DEBUG] Renderer.__init__: Quad VAO created")
+        logger.debug("Quad VAO created")
 
         # Create a white 1x1 texture for solid color rendering
         WHITE_PIXEL = np.array([255, 255, 255, 255], dtype='u1')
         self.white_texture = ctx.texture((1, 1), 4, WHITE_PIXEL.tobytes())
-        print("[DEBUG] Renderer.__init__: White texture created")
+        logger.debug("White texture created")
 
         # Create framebuffer for scene rendering
-        print(f"[DEBUG] Renderer.__init__: Creating scene framebuffer ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
+        logger.debug("Creating scene framebuffer (%dx%d)", WINDOW_WIDTH, WINDOW_HEIGHT)
         self.scene_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.scene_fbo = ctx.framebuffer(color_attachments=[self.scene_texture])
 
@@ -90,7 +93,7 @@ class Renderer:
         self.ui_fbo = ctx.framebuffer(color_attachments=[self.ui_texture])
 
         # Load background shader based on configuration
-        print(f"[DEBUG] Renderer.__init__: Loading background shader ({BACKGROUND_TYPE})...")
+        logger.debug("Loading background shader (%s)", BACKGROUND_TYPE)
         self.background_program = None
         self.background_enabled = BACKGROUND_TYPE != "solid"
         if BACKGROUND_TYPE == "starfield":
@@ -110,13 +113,13 @@ class Renderer:
             self.background_vao = ctx.simple_vertex_array(
                 self.background_program, self.quad_vbo, 'in_position'
             )
-            print(f"[DEBUG] Renderer.__init__: Background shader loaded successfully")
+            logger.debug("Background shader loaded successfully")
         else:
             self.background_enabled = False
-            print(f"[DEBUG] Renderer.__init__: Using solid background")
+            logger.debug("Using solid background")
         
         # Load dust overlay shader
-        print("[DEBUG] Renderer.__init__: Loading dust overlay shader...")
+        logger.debug("Loading dust overlay shader")
         self.dust_overlay_program = shader_manager.load_shader(
             'dust_overlay', 'basic.vert', 'dust_overlay.frag'
         )
@@ -124,14 +127,14 @@ class Renderer:
             self.dust_overlay_vao = ctx.simple_vertex_array(
                 self.dust_overlay_program, self.quad_vbo, 'in_position'
             )
-            print("[DEBUG] Renderer.__init__: Dust overlay shader loaded successfully")
+            logger.debug("Dust overlay shader loaded successfully")
         else:
-            print("[WARNING] Renderer.__init__: Dust overlay shader failed to load")
+            logger.warning("Dust overlay shader failed to load")
         
         # Time tracking for animated backgrounds
         self.time = 0.0
 
-        print("[DEBUG] Renderer.__init__: Renderer initialization complete!")
+        logger.debug("Renderer initialization complete")
 
     def update_time(self, dt: float):
         """Update time for animated backgrounds"""

@@ -1,6 +1,7 @@
 """
 Main menu scene
 """
+import logging
 import pygame
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
@@ -13,12 +14,14 @@ from src.utils.constants import (
     FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL
 )
 
+logger = logging.getLogger(__name__)
+
 
 class MenuScene(Scene):
     """Main menu scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager):
-        print("[DEBUG] MenuScene.__init__: Creating menu scene...")
+        logger.debug("Creating menu scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
@@ -49,7 +52,7 @@ class MenuScene(Scene):
         
         # Try to start menu music
         # self.audio_manager.play_music('menu_music.ogg')
-        print("[DEBUG] MenuScene.__init__: Menu scene created with particle effects")
+        logger.debug("Menu scene created with particle effects")
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -94,32 +97,32 @@ class MenuScene(Scene):
             )
     
     def _select_option(self):
-        print(f"[DEBUG] MenuScene._select_option: Selected option {self.selected_option}")
+        logger.debug("Selected option %d", self.selected_option)
         if self.selected_option == 0:  # 1 Player (Easy)
-            print("[DEBUG] MenuScene._select_option: Creating game scene with AI opponent (Easy)...")
+            logger.debug("Creating game scene with AI opponent (Easy)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='easy')
-            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
+            logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 1:  # 1 Player (Normal)
-            print("[DEBUG] MenuScene._select_option: Creating game scene with AI opponent (Normal)...")
+            logger.debug("Creating game scene with AI opponent (Normal)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='normal')
-            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
+            logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 2:  # 1 Player (Hard)
-            print("[DEBUG] MenuScene._select_option: Creating game scene with AI opponent (Hard)...")
+            logger.debug("Creating game scene with AI opponent (Hard)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='hard')
-            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
+            logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 3:  # 2 Player
-            print("[DEBUG] MenuScene._select_option: Creating game scene for 2 players...")
+            logger.debug("Creating game scene for 2 players")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, ai_enabled=False)
-            print("[DEBUG] MenuScene._select_option: Changing to game scene...")
+            logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 4:  # Quit
-            print("[DEBUG] MenuScene._select_option: Clearing scenes (quit)...")
+            logger.debug("Clearing scenes (quit)")
             self.scene_manager.clear_scenes()
     
     def update(self, dt: float):

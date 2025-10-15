@@ -1,6 +1,10 @@
 """
 Game constants and configuration
 """
+import logging
+
+# Logging settings
+LOG_LEVEL = logging.DEBUG  # Change to logging.INFO to reduce verbosity
 
 # Window settings
 WINDOW_WIDTH = 1280

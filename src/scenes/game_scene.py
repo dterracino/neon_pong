@@ -1,6 +1,7 @@
 """
 Main gameplay scene
 """
+import logging
 import pygame
 import random
 from typing import Optional
@@ -20,13 +21,15 @@ from src.utils.constants import (
     FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 )
 
+logger = logging.getLogger(__name__)
+
 
 class GameScene(Scene):
     """Main game scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
                  ai_enabled: bool = False, ai_difficulty: str = 'normal'):
-        print("[DEBUG] GameScene.__init__: Creating game scene...")
+        logger.debug("Creating game scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
@@ -34,7 +37,7 @@ class GameScene(Scene):
         self.ai_difficulty = ai_difficulty
         
         # Create entities
-        print("[DEBUG] GameScene.__init__: Creating game entities...")
+        logger.debug("Creating game entities")
         self.paddle1 = Paddle(PADDLE_OFFSET, WINDOW_HEIGHT // 2 - 50, 1)
         self.paddle2 = Paddle(WINDOW_WIDTH - PADDLE_OFFSET - 15, WINDOW_HEIGHT // 2 - 50, 2)
         self.ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
@@ -43,7 +46,7 @@ class GameScene(Scene):
         self.ai: Optional[PongAI] = None
         if self.ai_enabled:
             self.ai = PongAI(self.paddle2, self.ball, ai_difficulty)
-            print(f"[DEBUG] GameScene.__init__: AI opponent initialized with difficulty '{ai_difficulty}'")
+            logger.debug("AI opponent initialized with difficulty '%s'", ai_difficulty)
         
         # Particle systems
         self.particles = ParticleSystem()  # For ball impacts
@@ -63,7 +66,8 @@ class GameScene(Scene):
         
         # Try to start game music
         # self.audio_manager.play_music('game_music.ogg')
-        print(f"[DEBUG] GameScene.__init__: Game scene created (paddle1: {self.paddle1.x},{self.paddle1.y}, ball: {self.ball.x},{self.ball.y}, ai_enabled: {self.ai_enabled})")
+        logger.debug("Game scene created (paddle1: %.1f,%.1f, ball: %.1f,%.1f, ai_enabled: %s)", 
+                    self.paddle1.x, self.paddle1.y, self.ball.x, self.ball.y, self.ai_enabled)
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
