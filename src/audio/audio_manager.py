@@ -14,18 +14,10 @@ class AudioManager:
         self.asset_manager = asset_manager
         self.music_volume = MUSIC_VOLUME
         self.sfx_volume = SFX_VOLUME
-        
-        # Try to load default sounds (will fail gracefully if not found)
-        self.sounds = {
-            'paddle_hit': asset_manager.load_sound('paddle_hit.wav'),
-            'wall_hit': asset_manager.load_sound('wall_hit.wav'),
-            'score': asset_manager.load_sound('score.wav'),
-            'win': asset_manager.load_sound('win.wav'),
-        }
     
     def play_sound(self, sound_name: str, pitch_variation: bool = False):
-        """Play a sound effect"""
-        sound = self.sounds.get(sound_name)
+        """Play a sound effect by name (without extension)"""
+        sound = self.asset_manager.get_sound(sound_name)
         
         if sound:
             volume = self.sfx_volume

@@ -67,6 +67,17 @@ class Game:
         # Initialize managers (singleton pattern)
         print("[DEBUG] Game.__init__: Initializing asset manager...")
         self.asset_manager = AssetManager()
+        
+        # Preload all assets
+        print("[DEBUG] Game.__init__: Preloading assets...")
+        
+        def on_assets_loaded(sounds: int, music: int, fonts: int):
+            """Called when asset loading completes"""
+            print(f"[INFO] Asset loading complete: {sounds} sounds, {music} music, {fonts} fonts")
+        
+        sounds, music, fonts = self.asset_manager.preload_assets(on_complete=on_assets_loaded)
+        print(f"[DEBUG] Game.__init__: Assets preloaded successfully")
+        
         print("[DEBUG] Game.__init__: Initializing shader manager...")
         self.shader_manager = ShaderManager(self.ctx)
         print("[DEBUG] Game.__init__: Initializing audio manager...")
