@@ -115,6 +115,19 @@ class Renderer:
             self.background_enabled = False
             print(f"[DEBUG] Renderer.__init__: Using solid background")
         
+        # Load dust overlay shader
+        print("[DEBUG] Renderer.__init__: Loading dust overlay shader...")
+        self.dust_overlay_program = shader_manager.load_shader(
+            'dust_overlay', 'basic.vert', 'dust_overlay.frag'
+        )
+        if self.dust_overlay_program:
+            self.dust_overlay_vao = ctx.simple_vertex_array(
+                self.dust_overlay_program, self.quad_vbo, 'in_position'
+            )
+            print("[DEBUG] Renderer.__init__: Dust overlay shader loaded successfully")
+        else:
+            print("[WARNING] Renderer.__init__: Dust overlay shader failed to load")
+        
         # Time tracking for animated backgrounds
         self.time = 0.0
 
@@ -232,6 +245,43 @@ class Renderer:
         
         vao.release()
         vbo.release()
+    
+    def render_particles(self, particle_system):
+        """Render enhanced particle system to current framebuffer
+        
+        This should be called when scene_fbo is active to get bloom effect.
+        
+        Args:
+            particle_system: EnhancedParticleSystem instance
+        """
+        from src.entities.enhanced_particles import EnhancedParticle
+        
+        for particle in particle_system.particles:
+            alpha = particle.get_alpha()
+            color = (*particle.color[:3], alpha)
+            self.draw_circle(particle.x, particle.y, particle.size / 2, color)
+    
+    def draw_dust_overlay(self):
+        """Draw dust overlay effect on current framebuffer
+        
+        This creates a transparent layer of meandering dust particles with glinting.
+        Should be called after background but before other scene elements.
+        Requires alpha blending to be enabled.
+        """
+        if not self.dust_overlay_program:
+            return
+        
+        # Enable alpha blending for transparent overlay
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
+        # Render dust overlay
+        self.dust_overlay_program['time'] = self.time
+        self.dust_overlay_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.dust_overlay_vao.render(moderngl.TRIANGLE_STRIP)
+        
+        # Disable blending
+        self.ctx.disable(moderngl.BLEND)
 
     def draw_text(self, text: str, x: float, y: float, size: int, color: Tuple[float, float, float, float],
                   font_name: Optional[str] = None, centered: bool = False):
@@ -360,15 +410,15 @@ class Renderer:
         ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
         ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
         
-        # Create vertices (flipped UVs for proper orientation)
+        # Create vertices (correct UV orientation - 0,0 is bottom-left in OpenGL)
         vertices = np.array([
             # pos.x, pos.y, uv.x, uv.y
-            ndc_x,       ndc_y,       0.0, 1.0,  # Top-left
-            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
-            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
-            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
-            ndc_x + ndc_w, ndc_y - ndc_h, 1.0, 0.0,  # Bottom-right
-            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
+            ndc_x,       ndc_y,       0.0, 0.0,  # Top-left
+            ndc_x,       ndc_y - ndc_h, 0.0, 1.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y,       1.0, 0.0,  # Top-right
+            ndc_x,       ndc_y - ndc_h, 0.0, 1.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y - ndc_h, 1.0, 1.0,  # Bottom-right
+            ndc_x + ndc_w, ndc_y,       1.0, 0.0,  # Top-right
         ], dtype='f4')
         
         # Create temporary VBO and VAO

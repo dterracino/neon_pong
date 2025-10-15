@@ -3,6 +3,7 @@ Test AI opponent functionality
 """
 import sys
 import os
+from unittest.mock import Mock
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -12,69 +13,61 @@ def test_menu_options():
     """Test that menu has correct options"""
     from src.scenes.menu_scene import MenuScene
     
-    # Mock dependencies
-    class MockSceneManager:
-        pass
-    
-    class MockRenderer:
-        pass
-    
-    class MockAudioManager:
-        pass
-    
-    scene_manager = MockSceneManager()
-    renderer = MockRenderer()
-    audio_manager = MockAudioManager()
+    # Mock dependencies using unittest.mock
+    scene_manager = Mock()
+    renderer = Mock()
+    audio_manager = Mock()
     
     menu = MenuScene(scene_manager, renderer, audio_manager)
     
     # Check menu options
-    assert len(menu.options) == 3, f"Expected 3 menu options, got {len(menu.options)}"
-    assert menu.options[0] == "1 Player", f"Expected first option to be '1 Player', got '{menu.options[0]}'"
-    assert menu.options[1] == "2 Player", f"Expected second option to be '2 Player', got '{menu.options[1]}'"
-    assert menu.options[2] == "Quit", f"Expected third option to be 'Quit', got '{menu.options[2]}'"
+    assert len(menu.options) == 5, f"Expected 5 menu options, got {len(menu.options)}"
+    assert menu.options[0] == "1 Player (Easy)", f"Expected first option to be '1 Player (Easy)', got '{menu.options[0]}'"
+    assert menu.options[1] == "1 Player (Normal)", f"Expected second option to be '1 Player (Normal)', got '{menu.options[1]}'"
+    assert menu.options[2] == "1 Player (Hard)", f"Expected third option to be '1 Player (Hard)', got '{menu.options[2]}'"
+    assert menu.options[3] == "2 Player", f"Expected fourth option to be '2 Player', got '{menu.options[3]}'"
+    assert menu.options[4] == "Quit", f"Expected fifth option to be 'Quit', got '{menu.options[4]}'"
     
     print("✓ Menu options test passed")
     return True
 
 
 def test_game_scene_ai_parameter():
-    """Test that GameScene accepts ai_enabled parameter"""
+    """Test that GameScene accepts ai_enabled and ai_difficulty parameters"""
     import pygame
     pygame.init()
     
     try:
         from src.scenes.game_scene import GameScene
         
-        # Mock dependencies
-        class MockSceneManager:
-            pass
+        # Mock dependencies using unittest.mock
+        scene_manager = Mock()
+        renderer = Mock()
+        audio_manager = Mock()
         
-        class MockRenderer:
-            def begin_frame(self):
-                pass
-            def end_frame(self):
-                pass
-        
-        class MockAudioManager:
-            def play_sound(self, sound, pitch_variation=False):
-                pass
-        
-        scene_manager = MockSceneManager()
-        renderer = MockRenderer()
-        audio_manager = MockAudioManager()
-        
-        # Test with AI enabled
-        game_ai = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True)
+        # Test with AI enabled (default difficulty)
+        game_ai = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True)  # type: ignore
         assert game_ai.ai_enabled == True, "Expected ai_enabled to be True"
+        assert game_ai.ai is not None, "Expected AI to be initialized"
+        
+        # Test with AI enabled and specific difficulty
+        game_ai_easy = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True, ai_difficulty='easy')  # type: ignore
+        assert game_ai_easy.ai_enabled == True, "Expected ai_enabled to be True"
+        assert game_ai_easy.ai_difficulty == 'easy', "Expected ai_difficulty to be 'easy'"
+        
+        game_ai_hard = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True, ai_difficulty='hard')  # type: ignore
+        assert game_ai_hard.ai_enabled == True, "Expected ai_enabled to be True"
+        assert game_ai_hard.ai_difficulty == 'hard', "Expected ai_difficulty to be 'hard'"
         
         # Test with AI disabled
-        game_2p = GameScene(scene_manager, renderer, audio_manager, ai_enabled=False)
+        game_2p = GameScene(scene_manager, renderer, audio_manager, ai_enabled=False)  # type: ignore
         assert game_2p.ai_enabled == False, "Expected ai_enabled to be False"
+        assert game_2p.ai is None, "Expected AI to not be initialized"
         
         # Test default (should be False)
-        game_default = GameScene(scene_manager, renderer, audio_manager)
+        game_default = GameScene(scene_manager, renderer, audio_manager)  # type: ignore
         assert game_default.ai_enabled == False, "Expected default ai_enabled to be False"
+        assert game_default.ai is None, "Expected AI to not be initialized"
         
         print("✓ GameScene AI parameter test passed")
         return True
@@ -85,42 +78,37 @@ def test_game_scene_ai_parameter():
         return False
 
 
-def test_ai_paddle_method_exists():
-    """Test that AI paddle update method exists"""
+def test_ai_class_integration():
+    """Test that PongAI class is properly integrated"""
     import pygame
     pygame.init()
     
     try:
         from src.scenes.game_scene import GameScene
+        from src.ai.pong_ai import PongAI
         
-        # Mock dependencies
-        class MockSceneManager:
-            pass
+        # Mock dependencies using unittest.mock
+        scene_manager = Mock()
+        renderer = Mock()
+        audio_manager = Mock()
         
-        class MockRenderer:
-            def begin_frame(self):
-                pass
-            def end_frame(self):
-                pass
+        game = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True, ai_difficulty='normal')  # type: ignore
         
-        class MockAudioManager:
-            def play_sound(self, sound, pitch_variation=False):
-                pass
+        # Check that AI object exists and is correct type
+        assert hasattr(game, 'ai'), "Expected GameScene to have 'ai' attribute"
+        assert game.ai is not None, "Expected AI to be initialized"
+        assert isinstance(game.ai, PongAI), f"Expected AI to be PongAI instance, got {type(game.ai)}"
         
-        scene_manager = MockSceneManager()
-        renderer = MockRenderer()
-        audio_manager = MockAudioManager()
+        # Check that AI has required methods
+        assert hasattr(game.ai, 'update'), "Expected AI to have 'update' method"
+        assert callable(game.ai.update), "Expected AI.update to be callable"
+        assert hasattr(game.ai, 'reset'), "Expected AI to have 'reset' method"
+        assert callable(game.ai.reset), "Expected AI.reset to be callable"
         
-        game = GameScene(scene_manager, renderer, audio_manager, ai_enabled=True)
-        
-        # Check that _update_ai_paddle method exists
-        assert hasattr(game, '_update_ai_paddle'), "Expected GameScene to have _update_ai_paddle method"
-        assert callable(game._update_ai_paddle), "Expected _update_ai_paddle to be callable"
-        
-        print("✓ AI paddle method exists test passed")
+        print("✓ AI class integration test passed")
         return True
     except Exception as e:
-        print(f"✗ AI paddle method test failed: {e}")
+        print(f"✗ AI class integration test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -132,7 +120,7 @@ if __name__ == '__main__':
     results = []
     results.append(test_menu_options())
     results.append(test_game_scene_ai_parameter())
-    results.append(test_ai_paddle_method_exists())
+    results.append(test_ai_class_integration())
     
     print("\n" + "=" * 50)
     if all(results):

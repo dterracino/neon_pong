@@ -45,6 +45,8 @@ class Game:
             pygame.GL_CONTEXT_PROFILE_MASK,
             pygame.GL_CONTEXT_PROFILE_CORE
         )
+        # Disable VSync for maximum frame rate
+        pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 0)
         
         print(f"[DEBUG] Game.__init__: Creating window ({WINDOW_WIDTH}x{WINDOW_HEIGHT})...")
         self.screen = pygame.display.set_mode(

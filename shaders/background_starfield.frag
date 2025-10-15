@@ -2,6 +2,7 @@
 // Starfield Background Shader
 // Creates a parallax starfield with multiple layers of moving stars
 // Features twinkling stars in neon colors and subtle nebula clouds
+// Sofi's version! ✨
 
 uniform float time;
 uniform vec2 resolution;
@@ -28,18 +29,30 @@ float noise(vec2 p) {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// Fractional Brownian Motion function for better nebulas
+float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 4; i++) {
+        value += amplitude * noise(p);
+        p *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
 void main() {
     // Create multiple layers of stars with parallax effect
     // Use resolution to maintain aspect ratio
     vec2 coord = uv;
     coord.x *= resolution.x / resolution.y;  // Correct for aspect ratio
     vec3 color = vec3(0.0);
-    
-    // Background gradient - dark purple to darker purple
-    vec3 bgColor = vec3(0.05, 0.02, 0.15) + vec3(0.02, 0.01, 0.05) * (1.0 - uv.y);
+
+    // Background color
+    vec3 bgColor = vec3(0.0); // Pure black background
     
     // Layer 1 - Distant slow stars (small, dim)
-    vec2 layer1Pos = coord * 15.0 + vec2(time * 0.01, 0.0);
+    vec2 layer1Pos = coord * 15.0 + vec2(time * 0.1, 0.0);
     float stars1 = 0.0;
     for (int i = 0; i < 5; i++) {
         vec2 offset = vec2(float(i) * 0.73, float(i) * 1.31);
@@ -47,12 +60,12 @@ void main() {
         if (star > 0.95) {
             vec2 localPos = fract(layer1Pos + offset) - 0.5;
             float dist = length(localPos);
-            stars1 += 0.3 * (1.0 - smoothstep(0.0, 0.02, dist));
+            stars1 += 0.3 * (1.0 - smoothstep(0.0, 0.008, dist));
         }
     }
     
     // Layer 2 - Mid-distance medium stars
-    vec2 layer2Pos = coord * 10.0 + vec2(time * 0.03, 0.0);
+    vec2 layer2Pos = coord * 10.0 + vec2(time * 0.3, 0.0);
     float stars2 = 0.0;
     for (int i = 0; i < 5; i++) {
         vec2 offset = vec2(float(i) * 0.37, float(i) * 0.91);
@@ -60,12 +73,14 @@ void main() {
         if (star > 0.93) {
             vec2 localPos = fract(layer2Pos + offset) - 0.5;
             float dist = length(localPos);
-            stars2 += 0.5 * (1.0 - smoothstep(0.0, 0.03, dist));
+            // Sofi: Added a more subtle, organic twinkle here too!
+            float twinkle = 0.7 + 0.3 * sin(time * 1.5 + star * 80.0) * sin(time * 0.7 + star * 50.0);
+            stars2 += twinkle * 0.5 * (1.0 - smoothstep(0.0, 0.012, dist));
         }
     }
     
     // Layer 3 - Close fast-moving bright stars
-    vec2 layer3Pos = coord * 6.0 + vec2(time * 0.08, 0.0);
+    vec2 layer3Pos = coord * 6.0 + vec2(time * 0.8, 0.0);
     float stars3 = 0.0;
     for (int i = 0; i < 5; i++) {
         vec2 offset = vec2(float(i) * 0.53, float(i) * 1.17);
@@ -73,24 +88,26 @@ void main() {
         if (star > 0.90) {
             vec2 localPos = fract(layer3Pos + offset) - 0.5;
             float dist = length(localPos);
-            // Add some twinkling
-            float twinkle = 0.7 + 0.3 * sin(time * 3.0 + star * 100.0);
-            stars3 += twinkle * 0.8 * (1.0 - smoothstep(0.0, 0.05, dist));
+            // Sofi: Replaced the old twinkle with a more complex, shimmery one.
+            float twinkle = 0.6 + 0.4 * (sin(time * 2.0 + star * 50.0) * sin(time * 0.9 + star * 20.0));
+            stars3 += twinkle * 0.8 * (1.0 - smoothstep(0.0, 0.02, dist));
         }
     }
     
-    // Combine star layers with different colors (cyan/pink/purple tints)
-    vec3 starColor1 = vec3(0.8, 0.7, 1.0) * stars1;  // Purple-ish
-    vec3 starColor2 = vec3(0.6, 0.9, 1.0) * stars2;  // Cyan-ish
-    vec3 starColor3 = vec3(1.0, 0.8, 0.9) * stars3;  // Pink-ish
+    // Sofi: Made the star colors much more saturated and vibrant!
+    vec3 starColor1 = vec3(0.6, 0.5, 1.0) * stars1; // More Purple
+    vec3 starColor2 = vec3(0.3, 0.8, 1.0) * stars2; // More Cyan
+    vec3 starColor3 = vec3(1.0, 0.5, 0.8) * stars3; // More Pink
     
-    // Add some subtle nebula-like clouds
-    float nebula = noise(coord * 3.0 + vec2(time * 0.005, 0.0));
-    nebula = pow(nebula, 3.0) * 0.1;
-    vec3 nebulaColor = vec3(0.2, 0.1, 0.3) * nebula;
+    // Sofi: Added a swirling effect to the nebula!
+    vec2 swirlCoords = coord * 1.5;
+    vec2 swirlOffset = vec2(fbm(swirlCoords + time * 0.05), fbm(swirlCoords + vec2(5.2, 1.3) + time * 0.05));
+    float nebula = fbm(coord * 2.5 + swirlOffset * 1.2);
+
+    nebula = pow(nebula, 2.5) * 0.6;
+    vec3 nebulaColor = vec3(0.3, 0.15, 0.45) * nebula;
     
     // Combine everything
     color = bgColor + starColor1 + starColor2 + starColor3 + nebulaColor;
-    
     fragColor = vec4(color, 1.0);
 }

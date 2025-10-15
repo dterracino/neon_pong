@@ -49,6 +49,34 @@ FONT_SIZE_MEDIUM = 48  # For menu options
 FONT_SIZE_DEFAULT = 32 # Default text size
 FONT_SIZE_SMALL = 24   # For small text like controls
 
+# AI Difficulty Settings
+AI_DIFFICULTIES = {
+    'easy': {
+        'reaction_time': 0.3,        # Delay before reacting (seconds)
+        'speed_multiplier': 0.6,     # Move at 60% of max speed
+        'prediction_error': 80,      # Pixels of random error in prediction
+        'update_frequency': 0.2,     # How often AI recalculates target (seconds)
+        'dead_zone': 20,             # Don't move if within this many pixels of target
+        'adaptive': False,           # Don't adjust difficulty based on score
+    },
+    'normal': {
+        'reaction_time': 0.15,       # Faster reaction
+        'speed_multiplier': 0.8,     # Move at 80% of max speed
+        'prediction_error': 40,      # Less error in prediction
+        'update_frequency': 0.1,     # Update more frequently
+        'dead_zone': 15,             # Smaller dead zone
+        'adaptive': False,           # Don't adjust difficulty
+    },
+    'hard': {
+        'reaction_time': 0.05,       # Very fast reaction
+        'speed_multiplier': 1.0,     # Full speed
+        'prediction_error': 15,      # Minimal error
+        'update_frequency': 0.05,    # Update very frequently
+        'dead_zone': 10,             # Very small dead zone
+        'adaptive': True,            # Adjust difficulty based on score
+    },
+}
+
 # Background settings
 BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "solid"
 

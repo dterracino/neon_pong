@@ -2,17 +2,21 @@
 Main gameplay scene
 """
 import pygame
+import random
+from typing import Optional
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
 from src.audio.audio_manager import AudioManager
 from src.entities.paddle import Paddle
 from src.entities.ball import Ball
 from src.entities.particle import ParticleSystem
+from src.entities.enhanced_particles import EnhancedParticleSystem
 from src.scenes.pause_scene import PauseScene
+from src.ai.pong_ai import PongAI
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
-    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW,
+    COLOR_CYAN, COLOR_PINK, COLOR_YELLOW, COLOR_PURPLE, COLOR_MINT,
     FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 )
 
@@ -20,12 +24,14 @@ from src.utils.constants import (
 class GameScene(Scene):
     """Main game scene"""
     
-    def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, ai_enabled: bool = False):
+    def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
+                 ai_enabled: bool = False, ai_difficulty: str = 'normal'):
         print("[DEBUG] GameScene.__init__: Creating game scene...")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         self.ai_enabled = ai_enabled
+        self.ai_difficulty = ai_difficulty
         
         # Create entities
         print("[DEBUG] GameScene.__init__: Creating game entities...")
@@ -33,8 +39,19 @@ class GameScene(Scene):
         self.paddle2 = Paddle(WINDOW_WIDTH - PADDLE_OFFSET - 15, WINDOW_HEIGHT // 2 - 50, 2)
         self.ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         
-        # Particle system
-        self.particles = ParticleSystem()
+        # Initialize AI if enabled
+        self.ai: Optional[PongAI] = None
+        if self.ai_enabled:
+            self.ai = PongAI(self.paddle2, self.ball, ai_difficulty)
+            print(f"[DEBUG] GameScene.__init__: AI opponent initialized with difficulty '{ai_difficulty}'")
+        
+        # Particle systems
+        self.particles = ParticleSystem()  # For ball impacts
+        self.fireworks = EnhancedParticleSystem()  # For victory celebration
+        
+        # Fireworks state
+        self.fireworks_timer = 0.0
+        self.next_firework_time = 0.0
         
         # Score
         self.score1 = 0
@@ -55,25 +72,18 @@ class GameScene(Scene):
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager)
                 self.scene_manager.push_scene(pause_scene)
     
-    def _update_ai_paddle(self, dt: float):
-        """Update AI-controlled paddle to follow the ball"""
-        # Calculate paddle center and ball center
-        paddle_center_y = self.paddle2.y + self.paddle2.height / 2
-        ball_center_y = self.ball.y + self.ball.size / 2
-        
-        # AI reaction threshold - adds some imperfection
-        threshold = 10
-        
-        # Move paddle towards ball
-        if ball_center_y < paddle_center_y - threshold:
-            self.paddle2.move_up()
-        elif ball_center_y > paddle_center_y + threshold:
-            self.paddle2.move_down()
-        else:
-            self.paddle2.stop()
-    
     def update(self, dt: float):
         if self.game_over:
+            # Update fireworks during victory screen
+            self.fireworks.update(dt)
+            self.fireworks_timer += dt
+            
+            # Launch new fireworks periodically
+            if self.fireworks_timer >= self.next_firework_time:
+                self._launch_firework()
+                # Random interval between fireworks (0.3 to 0.7 seconds)
+                self.next_firework_time = self.fireworks_timer + random.uniform(0.3, 0.7)
+            
             return
         
         # Get keyboard state
@@ -82,9 +92,9 @@ class GameScene(Scene):
         # Update paddles
         self.paddle1.handle_input(keys)
         
-        if self.ai_enabled:
+        if self.ai_enabled and self.ai:
             # AI controls paddle2
-            self._update_ai_paddle(dt)
+            self.ai.update(dt)
         else:
             # Human player controls paddle2
             self.paddle2.handle_input(keys)
@@ -143,6 +153,14 @@ class GameScene(Scene):
             self.ball.reset()
             self.particles.clear()
             
+            # Reset AI state when ball resets
+            if self.ai:
+                self.ai.reset()
+            
+            # Adjust AI difficulty adaptively if enabled
+            if self.ai:
+                self.ai.adjust_difficulty_adaptive(self.score1, self.score2)
+            
             # Check win condition
             if self.score1 >= WINNING_SCORE:
                 self.game_over = True
@@ -155,6 +173,19 @@ class GameScene(Scene):
         
         # Update particles
         self.particles.update(dt)
+    
+    def _launch_firework(self):
+        """Launch a firework at a random location"""
+        # Random position in upper 2/3 of screen
+        x = random.uniform(WINDOW_WIDTH * 0.2, WINDOW_WIDTH * 0.8)
+        y = random.uniform(WINDOW_HEIGHT * 0.2, WINDOW_HEIGHT * 0.6)
+        
+        # Choose random neon color for this firework
+        colors = [COLOR_CYAN, COLOR_PINK, COLOR_YELLOW, COLOR_PURPLE, COLOR_MINT]
+        color = random.choice(colors)
+        
+        # Launch the firework
+        self.fireworks.emit_firework(x, y, color, count=random.randint(40, 60), speed=random.uniform(150, 250))
     
     def render(self):
         self.renderer.begin_frame()
@@ -209,6 +240,26 @@ class GameScene(Scene):
             alpha = particle.get_alpha()
             color = (*particle.color[:3], alpha)
             self.renderer.draw_circle(particle.x, particle.y, particle.size / 2, color)
+        
+        # Draw fireworks particles
+        if self.fireworks:
+            self.renderer.render_particles(self.fireworks)
+        
+        # Draw AI thinking indicator (if AI is in reaction delay)
+        if self.ai and not self.ai.is_reacting:
+            # Pulsing indicator above AI paddle during reaction delay
+            import math
+            pulse = 0.5 + 0.5 * math.sin(self.ai.reaction_timer * 10.0)
+            indicator_size = 4 + pulse * 3
+            indicator_alpha = 0.6 + pulse * 0.4
+            indicator_color = (*COLOR_YELLOW[:3], indicator_alpha)
+            
+            self.renderer.draw_circle(
+                self.paddle2.x + self.paddle2.width / 2,
+                self.paddle2.y - 15,
+                indicator_size,
+                indicator_color
+            )
         
         # Draw scores
         score_y = 50
