@@ -11,6 +11,7 @@ from src.rendering.renderer import Renderer
 from src.audio.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
 from src.utils.fps_counter import FPSCounter
+from src.utils.screenshot import ScreenshotManager
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, FPS, WINDOW_TITLE,
     FPS_DISPLAY_SHOW_INSTANT, FPS_DISPLAY_SHOW_AVERAGE,
@@ -111,6 +112,11 @@ class Game:
         self.fps_counter = FPSCounter(average_window=FPS_DISPLAY_AVERAGE_WINDOW)
         logger.debug("FPS counter initialized")
         
+        # Initialize screenshot manager
+        logger.debug("Initializing screenshot manager")
+        self.screenshot_manager = ScreenshotManager()
+        logger.debug("Screenshot manager initialized")
+        
         logger.debug("Game initialization complete")
         
     def run(self):
@@ -174,6 +180,13 @@ class Game:
                     self.fps_counter.toggle_visibility()
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
                     logger.debug("FPS display %s", status)
+                elif event.key == pygame.K_s and (event.mod & pygame.KMOD_CTRL):
+                    # Capture screenshot with Ctrl-S
+                    try:
+                        filepath = self.screenshot_manager.capture(self.screen)
+                        logger.info("Screenshot captured: %s", filepath)
+                    except Exception as e:
+                        logger.error("Failed to capture screenshot: %s", e)
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:
