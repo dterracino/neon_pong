@@ -12,6 +12,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎯 Single-player vs AI or two-player local multiplayer
 - 🤖 AI opponent with ball-tracking behavior
 - 💫 Particle effects and screen shake
+- 🚀 **Performance-optimized text rendering with intelligent caching**
 - 🔍 Comprehensive debug logging for troubleshooting
 
 ## Architecture
@@ -21,6 +22,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - **Asset Management**: Centralized asset loading and caching
 - **Shader Management**: Dynamic shader compilation and management
 - **Scene System**: Modular scene management
+- **Text Cache System**: LRU cache for optimized text rendering performance
 
 ## Installation
 

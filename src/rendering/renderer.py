@@ -88,6 +88,14 @@ class Renderer:
         # Initialize asset manager for fonts
         self.asset_manager = AssetManager()
 
+        # Text surface cache for performance optimization
+        # Key: (text, size, pygame_color, font_name), Value: pygame.Surface
+        self.text_surface_cache: Dict[tuple, pygame.Surface] = {}
+        
+        # Text texture cache for performance optimization
+        # Key: (text, size, pygame_color, font_name), Value: (moderngl.Texture, width, height)
+        self.text_texture_cache: Dict[tuple, Tuple[moderngl.Texture, int, int]] = {}
+
         # UI overlay texture for text (rendered after bloom)
         self.ui_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.ui_fbo = ctx.framebuffer(color_attachments=[self.ui_texture])
@@ -133,12 +141,56 @@ class Renderer:
         
         # Time tracking for animated backgrounds
         self.time = 0.0
+        
+        # Cache management
+        self.max_cache_size = 100  # Maximum number of cached text items
+        self.cache_access_count: Dict[tuple, int] = {}  # Track access frequency
 
         logger.debug("Renderer initialization complete")
 
     def update_time(self, dt: float):
         """Update time for animated backgrounds"""
         self.time += dt
+    
+    def _manage_text_cache(self):
+        """Manage text cache size by removing least frequently used items"""
+        if len(self.text_surface_cache) <= self.max_cache_size:
+            return
+        
+        # Sort by access count and remove least frequently used items
+        sorted_items = sorted(self.cache_access_count.items(), key=lambda x: x[1])
+        items_to_remove = len(self.text_surface_cache) - self.max_cache_size + 10  # Remove 10 extra for headroom
+        
+        for cache_key, _ in sorted_items[:items_to_remove]:
+            # Remove from surface cache
+            if cache_key in self.text_surface_cache:
+                del self.text_surface_cache[cache_key]
+            
+            # Remove from texture cache and release GPU texture
+            if cache_key in self.text_texture_cache:
+                texture, _, _ = self.text_texture_cache[cache_key]
+                texture.release()
+                del self.text_texture_cache[cache_key]
+            
+            # Remove from access count
+            if cache_key in self.cache_access_count:
+                del self.cache_access_count[cache_key]
+        
+        logger.debug("Cache cleanup: removed %d items, now at %d items", 
+                    items_to_remove, len(self.text_surface_cache))
+    
+    def get_text_cache_stats(self) -> Dict[str, int]:
+        """Get statistics about the text rendering cache
+        
+        Returns:
+            Dictionary with cache statistics including size and hit counts
+        """
+        return {
+            'surface_cache_size': len(self.text_surface_cache),
+            'texture_cache_size': len(self.text_texture_cache),
+            'max_cache_size': self.max_cache_size,
+            'total_accesses': sum(self.cache_access_count.values())
+        }
     
     def begin_frame(self):
         """Begin rendering a frame"""
@@ -304,15 +356,33 @@ class Renderer:
             return
 
         # --- Stage 1: Render all text surfaces and calculate atlas size ---
+        # Use cache for surface rendering to avoid redundant pygame.font.render calls
         rendered_surfaces = []
         total_width = 0
         max_height = 0
         for call in self.text_batch:
-            font = self.asset_manager.get_font(call.font_name, call.size)
-            surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+            # Create cache key from text properties
+            cache_key = (call.text, call.size, call.pygame_color, call.font_name)
+            
+            # Track cache access for LRU management
+            self.cache_access_count[cache_key] = self.cache_access_count.get(cache_key, 0) + 1
+            
+            # Check if we have this text surface cached
+            if cache_key in self.text_surface_cache:
+                surface = self.text_surface_cache[cache_key]
+            else:
+                # Render new surface and cache it
+                font = self.asset_manager.get_font(call.font_name, call.size)
+                surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+                self.text_surface_cache[cache_key] = surface
+            
             rendered_surfaces.append(surface)
             total_width += surface.get_width()
             max_height = max(max_height, surface.get_height())
+        
+        # Periodically clean up cache if it gets too large
+        if len(self.text_surface_cache) > self.max_cache_size:
+            self._manage_text_cache()
 
         # --- Stage 2: Create texture atlas and generate vertex data ---
         if total_width == 0 or max_height == 0:
