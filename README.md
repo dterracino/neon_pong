@@ -12,6 +12,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎯 Single-player vs AI or two-player local multiplayer
 - 🤖 AI opponent with ball-tracking behavior
 - 💫 Particle effects and screen shake
+- 🎬 **Comprehensive tweening library** with 31 easing functions for smooth animations
 - 🔍 Comprehensive debug logging for troubleshooting
 
 ## Architecture
@@ -99,6 +100,16 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 - **Solid**: Static background for maximum performance
 
 See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
+
+### Tweening/Animation System
+
+The game includes a comprehensive tweening library with 31 easing functions for smooth animations:
+- **11 Easing Categories**: Linear, Quad, Cubic, Quart, Quint, Sine, Expo, Circ, Elastic, Back, Bounce
+- **In/Out/InOut Variations**: Fine control over animation curves
+- **TweenManager**: Manage multiple concurrent animations
+- **Perfect for**: UI transitions, screen fades, smooth movement, particle effects
+
+See [docs/TWEENING.md](docs/TWEENING.md) for complete documentation and examples.
 
 ### Color Scheme
 
