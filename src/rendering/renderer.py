@@ -137,8 +137,9 @@ class Renderer:
         logger.debug("Renderer initialization complete")
 
     def update_time(self, dt: float):
-        """Update time for animated backgrounds"""
+        """Update time for animated backgrounds and post-processing effects"""
         self.time += dt
+        self.post_processor.update_time(dt)
     
     def begin_frame(self):
         """Begin rendering a frame"""
@@ -171,13 +172,16 @@ class Renderer:
         self._flush_text_batch()
 
         # Apply bloom post-processing to scene
-        final_texture = self.post_processor.apply_bloom(self.scene_texture)
+        bloomed_texture = self.post_processor.apply_bloom(self.scene_texture)
+        
+        # Apply style effect (scanlines, CRT, VHS, or none) to bloomed result
+        final_texture = self.post_processor.apply_style_effect(bloomed_texture)
 
         # Render to screen
         self.ctx.screen.use()
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
 
-        # Draw bloomed scene to screen
+        # Draw final processed scene to screen
         final_texture.use(0)
         self.basic_program['tex'] = 0
         self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)

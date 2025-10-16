@@ -84,6 +84,9 @@ AI_DIFFICULTIES = {
 # Background settings
 BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "solid"
 
+# Post-processing style effect settings
+POST_EFFECT_TYPE = "none"  # Options: "none", "scanlines", "crt", "vhs"
+
 # FPS Display settings
 FPS_DISPLAY_SHOW_INSTANT = True     # Show instant frame rate
 FPS_DISPLAY_SHOW_AVERAGE = True     # Show average frame rate
