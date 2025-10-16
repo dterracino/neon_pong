@@ -114,20 +114,23 @@ def main():
     current_effect_idx = 0
     
     # We'll manually create post processors for each effect
+    # by dynamically modifying the constant (for testing purposes only)
+    # Note: This is a test-only pattern. In production, restart the game to change effects.
+    import src.utils.constants as constants
+    original_effect = constants.POST_EFFECT_TYPE
+    
     effect_processors = {}
     
     for effect in effects:
-        # Temporarily set the constant
-        import src.utils.constants as constants
-        original_effect = constants.POST_EFFECT_TYPE
+        # Temporarily set the constant for initialization
         constants.POST_EFFECT_TYPE = effect
         
         # Create post processor
         processor = PostProcessor(ctx, shader_manager)
         effect_processors[effect] = processor
-        
-        # Restore original
-        constants.POST_EFFECT_TYPE = original_effect
+    
+    # Restore original value
+    constants.POST_EFFECT_TYPE = original_effect
     
     clock = pygame.time.Clock()
     running = True
