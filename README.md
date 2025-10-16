@@ -7,6 +7,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎮 Classic Pong gameplay with modern graphics
 - ✨ Bloom post-processing effects using ModernGL
 - 🌌 **Shader-drawn animated backgrounds** (starfield, plasma, waves)
+- 🎨 **Retro style effects** (scanlines, CRT, VHS) - NEW!
 - 🌈 Neon-vaporwave color scheme
 - 🎵 Sound effects and background music support
 - 🎯 Single-player vs AI or two-player local multiplayer
@@ -76,7 +77,10 @@ pong-moderngl/
     ├── background_*.frag        # Animated background shaders
     ├── bloom_extract.frag       # Bloom extraction
     ├── bloom_blur.frag          # Gaussian blur
-    └── bloom_combine.frag       # Bloom combining
+    ├── bloom_combine.frag       # Bloom combining
+    ├── scanlines.frag           # Scanlines effect
+    ├── crt.frag                 # CRT monitor effect
+    └── vhs.frag                 # VHS tape effect
 ```
 
 ## Technical Details
@@ -87,8 +91,9 @@ pong-moderngl/
 2. **Scene Rendering**: Game objects rendered to framebuffer
 3. **Bloom Extraction**: Extract bright pixels above threshold
 4. **Gaussian Blur**: Multi-pass blur for glow effect
-5. **Combine**: Merge original scene with bloom
-6. **Display**: Final image to screen
+5. **Bloom Combine**: Merge original scene with bloom
+6. **Style Effect**: Optional retro effect (scanlines, CRT, VHS) - NEW!
+7. **Display**: Final image to screen
 
 ### Animated Backgrounds
 
@@ -97,6 +102,16 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 - **Plasma**: Smooth flowing neon colors
 - **Waves**: Animated wave patterns with retro grid
 - **Solid**: Static background for maximum performance
+
+### Post-Processing Style Effects
+
+Apply retro visual effects in `src/utils/constants.py`:
+- **None**: Clean modern look (default)
+- **Scanlines**: Horizontal scanlines like old monitors
+- **CRT**: Full CRT simulation with curvature and phosphor glow
+- **VHS**: VHS tape artifacts with tracking errors and noise
+
+See [docs/POST_PROCESSING_EFFECTS.md](docs/POST_PROCESSING_EFFECTS.md) for detailed information.
 
 See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
 
