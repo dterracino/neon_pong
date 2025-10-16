@@ -57,6 +57,19 @@ def test_screenshot_manager():
         assert filename.endswith(".png"), "Filename doesn't have .png extension"
         print(f"✓ Filename format correct: {filename}")
         
+        # Test capture to memory without saving
+        print("\nTesting capture to memory...")
+        screenshot_surface = screenshot_manager.capture_to_memory(screen)
+        assert screenshot_surface is not None, "Screenshot surface should not be None"
+        assert screenshot_surface.get_size() == screen.get_size(), "Screenshot size should match screen size"
+        print(f"✓ Capture to memory successful: {screenshot_surface.get_size()}")
+        
+        # Test get_last_screenshot
+        last = screenshot_manager.get_last_screenshot()
+        assert last is not None, "Last screenshot should not be None"
+        assert last.get_size() == screen.get_size(), "Last screenshot size should match screen size"
+        print(f"✓ get_last_screenshot works correctly")
+        
         # Test multiple screenshots
         print("\nTesting multiple screenshots...")
         filepath2 = screenshot_manager.capture(screen)
@@ -67,6 +80,15 @@ def test_screenshot_manager():
         screenshots = [f for f in os.listdir(temp_dir) if f.endswith('.png')]
         assert len(screenshots) == 2, f"Expected 2 screenshots, found {len(screenshots)}"
         print(f"✓ Both screenshots exist in directory")
+        
+        # Test capture without saving to disk
+        print("\nTesting capture without saving to disk...")
+        initial_count = len([f for f in os.listdir(temp_dir) if f.endswith('.png')])
+        result = screenshot_manager.capture(screen, save_to_disk=False)
+        assert result == "", "Should return empty string when not saving to disk"
+        final_count = len([f for f in os.listdir(temp_dir) if f.endswith('.png')])
+        assert initial_count == final_count, "File count should not change when save_to_disk=False"
+        print(f"✓ Capture without save to disk works correctly")
         
         print("\n✓ All tests passed!")
         return True

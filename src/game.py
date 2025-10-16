@@ -96,9 +96,15 @@ class Game:
         logger.debug("Initializing scene manager")
         self.scene_manager = SceneManager()
         
+        # Initialize screenshot manager (needs to be before menu scene)
+        logger.debug("Initializing screenshot manager")
+        self.screenshot_manager = ScreenshotManager()
+        logger.debug("Screenshot manager initialized")
+        
         # Start with menu scene
         logger.debug("Creating initial menu scene")
-        initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager)
+        initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager,
+                                 self.screenshot_manager)
         logger.debug("Pushing menu scene to scene manager")
         self.scene_manager.push_scene(initial_scene)
         
@@ -112,10 +118,8 @@ class Game:
         self.fps_counter = FPSCounter(average_window=FPS_DISPLAY_AVERAGE_WINDOW)
         logger.debug("FPS counter initialized")
         
-        # Initialize screenshot manager
-        logger.debug("Initializing screenshot manager")
-        self.screenshot_manager = ScreenshotManager()
-        logger.debug("Screenshot manager initialized")
+        # Flag to trigger screenshot capture
+        self.pending_screenshot = False
         
         logger.debug("Game initialization complete")
         
@@ -158,6 +162,18 @@ class Game:
             # Swap buffers
             pygame.display.flip()
             
+            # Capture screenshot after all rendering is complete (post-flip)
+            if self.pending_screenshot:
+                try:
+                    filepath = self.screenshot_manager.capture(self.screen)
+                    logger.info("Screenshot captured: %s", filepath)
+                except Exception as e:
+                    logger.error("Failed to capture screenshot: %s", e)
+                self.pending_screenshot = False
+            
+            # Always capture to memory for pause screen (non-blocking, minimal overhead)
+            self.screenshot_manager.capture_to_memory(self.screen)
+            
             if frame_count < 5:
                 logger.debug("Frame %d complete", frame_count)
             
@@ -181,12 +197,9 @@ class Game:
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
                     logger.debug("FPS display %s", status)
                 elif event.key == pygame.K_s and (event.mod & pygame.KMOD_CTRL):
-                    # Capture screenshot with Ctrl-S
-                    try:
-                        filepath = self.screenshot_manager.capture(self.screen)
-                        logger.info("Screenshot captured: %s", filepath)
-                    except Exception as e:
-                        logger.error("Failed to capture screenshot: %s", e)
+                    # Schedule screenshot capture after frame completes
+                    self.pending_screenshot = True
+                    logger.debug("Screenshot scheduled for capture after frame completion")
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:
