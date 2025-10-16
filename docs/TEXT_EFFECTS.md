@@ -2,7 +2,26 @@
 
 ## Overview
 
-The enhanced text rendering system now supports various visual effects applied through shaders, including stroke outlines, drop shadows, and gradient overlays. These effects can be combined and are GPU-accelerated for optimal performance.
+The enhanced text rendering system now supports various visual effects applied through shaders, including stroke outlines, drop shadows, and gradient overlays. **Each text element can have its own unique combination of effects applied independently** - this allows for maximum creative flexibility on a single screen.
+
+## Key Feature: Independent Per-Text Effects
+
+**Important:** Each call to `draw_text()` can specify its own unique `TextEffects` configuration. The effects are applied per-text-element, not globally:
+
+```python
+# Title with ALL effects
+title_fx = TextEffects(stroke_width=3.0, shadow_offset=(2,2), gradient_enabled=True, ...)
+renderer.draw_text("NEON PONG", x, y, 72, color, effects=title_fx)
+
+# Player text with ONLY stroke (different from title)
+player_fx = TextEffects(stroke_width=1.5, stroke_color=(0,0,0,1))
+renderer.draw_text("Player 1", x, y, 32, color, effects=player_fx)
+
+# Score with NO effects (rendered on same frame)
+renderer.draw_text("0", x, y, 64, color)
+```
+
+All three texts above render on the same frame with completely different effect configurations. The system renders each text individually with its own effect parameters.
 
 ## Text Effects
 
@@ -191,6 +210,39 @@ Benchmarks various scenarios:
 - Cache state comparisons
 
 ## Technical Details
+
+### Per-Text Effect Application
+
+The system renders each text element individually to ensure independent effect parameters:
+
+1. **Atlas Creation**: All text surfaces are packed into a single texture atlas (efficient)
+2. **Per-Text Rendering**: Each text quad is rendered individually with its own:
+   - Vertex data (position and UV coordinates)
+   - Effect uniforms (stroke, shadow, gradient parameters)
+   - Color and base texture
+
+**Implementation:**
+```python
+# For each text in the batch:
+for i, call in enumerate(batch):
+    # Write this text's vertices to VBO
+    text_vertices = all_vertices[i*24:(i+1)*24]
+    self.text_vbo.write(vertex_data)
+    
+    if call.effects:
+        # Set THIS text's effect uniforms
+        shader['strokeWidth'] = call.effects.stroke_width
+        shader['shadowOffset'] = call.effects.shadow_offset
+        # ... etc
+        
+        # Render this text with effects
+        render(6 vertices)
+    else:
+        # Render without effects
+        render(6 vertices)
+```
+
+This ensures each text has completely independent effect parameters.
 
 ### Coordinate Systems
 

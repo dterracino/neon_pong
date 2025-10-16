@@ -487,10 +487,6 @@ class Renderer:
         atlas_texture.repeat_y = False
         atlas_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
 
-        # Write vertex data to dynamic VBO
-        vertex_np = np.array(all_vertices, dtype='f4')
-        self.text_vbo.write(vertex_np.tobytes())
-
         # Switch to target framebuffer
         target_fbo.use()
         self.ctx.enable(moderngl.BLEND)
@@ -498,36 +494,35 @@ class Renderer:
 
         atlas_texture.use(0)
         
-        # Check if any text in this batch has effects
-        has_effects = any(call.effects is not None for call in batch)
-        
-        if has_effects:
-            # Use effects shader and set uniforms for each text
-            # For simplicity, we'll render each text separately when effects are used
-            # (could be optimized to batch texts with same effects)
-            for i, call in enumerate(batch):
-                if call.effects:
-                    self._render_text_with_effects(call, atlas_texture, all_vertices[i*24:(i+1)*24])
-                else:
-                    # Use basic shader for this text
-                    self.text_program['tex'] = 0
-                    self.text_program['color'] = call.color
-                    # Render just this text's vertices
-                    self.text_vao.render(moderngl.TRIANGLES, vertices=6)
-        else:
-            # Use basic shader for all text
-            self.text_program['tex'] = 0
-            self.text_program['color'] = (1.0, 1.0, 1.0, 1.0)  # Color is baked into texture
-            self.text_vao.render(moderngl.TRIANGLES, vertices=len(all_vertices) // 4)
+        # Render each text element individually with its own effects
+        # Each text can have unique effect parameters
+        for i, call in enumerate(batch):
+            # Get vertices for this specific text (6 vertices = 24 floats per text)
+            text_vertices = all_vertices[i*24:(i+1)*24]
+            vertex_np = np.array(text_vertices, dtype='f4')
+            self.text_vbo.write(vertex_np.tobytes())
+            
+            if call.effects:
+                # Render with effects shader and per-text effect parameters
+                self._render_text_with_effects(call, atlas_texture)
+            else:
+                # Render with basic shader
+                self.text_program['tex'] = 0
+                self.text_program['color'] = call.color
+                self.text_vao.render(moderngl.TRIANGLES, vertices=6)
 
         self.ctx.disable(moderngl.BLEND)
         atlas_texture.release()
     
-    def _render_text_with_effects(self, call: TextDrawCall, atlas_texture, vertices):
-        """Render a single text with effects applied."""
+    def _render_text_with_effects(self, call: TextDrawCall, atlas_texture):
+        """Render a single text with effects applied.
+        
+        The vertex data must already be written to the VBO before calling this method.
+        This sets the per-text effect uniforms and renders using the effects shader.
+        """
         effects = call.effects or TextEffects()
         
-        # Set effect uniforms
+        # Set effect uniforms (per-text, independent parameters)
         self.text_effects_program['tex'] = 0
         self.text_effects_program['color'] = call.color
         self.text_effects_program['strokeWidth'] = effects.stroke_width
@@ -539,7 +534,7 @@ class Renderer:
         self.text_effects_program['gradientColorTop'] = effects.gradient_color_top
         self.text_effects_program['gradientColorBottom'] = effects.gradient_color_bottom
         
-        # Render using effects shader
+        # Render using effects shader (6 vertices for this specific text)
         self.text_effects_vao.render(moderngl.TRIANGLES, vertices=6)
 
     def draw_text_direct(self, text: str, x: float, y: float, size: int, 
