@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 import pygame
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -13,31 +14,59 @@ logger = logging.getLogger(__name__)
 class ScreenshotManager:
     """Handles screenshot capture and saving"""
     
-    def __init__(self, screenshots_dir: str = "screenshots"):
+    def __init__(self, screenshots_dir: str = "screenshots", ctx=None):
         """
         Initialize screenshot manager
         
         Args:
             screenshots_dir: Directory to save screenshots (relative to project root)
+            ctx: ModernGL context for reading OpenGL framebuffer
         """
         self.screenshots_dir = screenshots_dir
+        self.ctx = ctx
         self.last_screenshot: Optional[pygame.Surface] = None
         logger.debug("ScreenshotManager initialized with directory: %s", screenshots_dir)
+    
+    def set_context(self, ctx):
+        """
+        Set the ModernGL context for reading OpenGL framebuffer
+        
+        Args:
+            ctx: ModernGL context
+        """
+        self.ctx = ctx
+        logger.debug("ModernGL context set for screenshot manager")
     
     def capture_to_memory(self, screen: pygame.Surface) -> pygame.Surface:
         """
         Capture screenshot to memory without saving to disk
         
         Args:
-            screen: Pygame surface to capture
+            screen: Pygame surface to capture (used for size info)
             
         Returns:
-            Copy of the screen surface
+            Copy of the screen surface with OpenGL content
         """
-        # Create a copy of the screen
-        screenshot = screen.copy()
+        if self.ctx is None:
+            logger.warning("No ModernGL context available, capturing empty surface")
+            screenshot = screen.copy()
+        else:
+            # Read from OpenGL framebuffer instead of pygame surface
+            width, height = screen.get_size()
+            
+            # Read RGBA data from OpenGL framebuffer
+            buffer = self.ctx.screen.read(components=4)
+            
+            # Convert to numpy array and flip vertically (OpenGL origin is bottom-left)
+            pixels = np.frombuffer(buffer, dtype='u1').reshape((height, width, 4))
+            pixels = np.flipud(pixels)  # Flip vertically
+            
+            # Create pygame surface from the flipped data
+            screenshot = pygame.image.frombuffer(pixels.tobytes(), (width, height), 'RGBA')
+            screenshot = screenshot.convert_alpha()
+        
         self.last_screenshot = screenshot
-        logger.debug("Screenshot captured to memory")
+        logger.debug("Screenshot captured to memory from OpenGL framebuffer")
         return screenshot
     
     def capture(self, screen: pygame.Surface, save_to_disk: bool = True) -> str:
@@ -45,14 +74,14 @@ class ScreenshotManager:
         Capture and save a screenshot
         
         Args:
-            screen: Pygame surface to capture
+            screen: Pygame surface to capture (used for size info)
             save_to_disk: If True, saves to disk. If False, only captures to memory.
             
         Returns:
             Path to saved screenshot file (or empty string if not saved to disk)
         """
-        # Always capture to memory
-        self.capture_to_memory(screen)
+        # Always capture to memory (which reads from OpenGL framebuffer)
+        screenshot = self.capture_to_memory(screen)
         
         if not save_to_disk:
             return ""
@@ -67,7 +96,7 @@ class ScreenshotManager:
         
         # Save screenshot
         try:
-            pygame.image.save(screen, filepath)
+            pygame.image.save(screenshot, filepath)
             logger.info("Screenshot saved to: %s", filepath)
             return filepath
         except Exception as e:

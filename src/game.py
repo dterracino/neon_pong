@@ -98,7 +98,7 @@ class Game:
         
         # Initialize screenshot manager (needs to be before menu scene)
         logger.debug("Initializing screenshot manager")
-        self.screenshot_manager = ScreenshotManager()
+        self.screenshot_manager = ScreenshotManager(ctx=self.ctx)
         logger.debug("Screenshot manager initialized")
         
         # Start with menu scene

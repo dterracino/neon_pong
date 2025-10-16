@@ -49,31 +49,36 @@ Pause screen:
 
 ### Screenshot Capture
 The screenshot feature uses:
-- `pygame.image.save()` for screen capture
+- `ctx.screen.read()` to read from the OpenGL framebuffer (ModernGL)
+- `pygame.image.frombuffer()` to convert OpenGL pixel data to pygame surface
+- `pygame.image.save()` to save the surface to disk
 - Python's `datetime` module for timestamp generation
 - Automatic directory creation with `os.makedirs()`
 - Deferred capture mechanism to ensure all rendering is complete
 
+**Important**: Since the game uses OpenGL rendering through ModernGL, screenshots are captured directly from the OpenGL framebuffer using `ctx.screen.read()` rather than from the pygame surface. This ensures that all OpenGL-rendered content (including post-processing effects, bloom, and shaders) is correctly captured.
+
 ### Capture Timing
 Screenshots are captured in the following sequence:
 1. User presses Ctrl-S (sets capture flag)
-2. Frame renders completely (scene + overlays)
+2. Frame renders completely to OpenGL framebuffer (scene + overlays)
 3. `pygame.display.flip()` swaps buffers
-4. Screenshot is captured from the completed frame
-5. Image is saved to disk
+4. Screenshot is captured from the OpenGL framebuffer using `ctx.screen.read()`
+5. Pixel data is converted from OpenGL format (bottom-left origin) to pygame format (top-left origin)
+6. Image is saved to disk
 
-This ensures that all post-processing effects, bloom, and UI overlays are included in the screenshot.
+This ensures that all post-processing effects, bloom, and UI overlays are included in the screenshot. The timing after `flip()` is critical to ensure the OpenGL rendering pipeline has completed.
 
 ### Blur Effect
 The pause screen blur uses:
 - Existing Gaussian blur shader (`bloom_blur.frag`)
 - 3-pass blur (horizontal → vertical → horizontal)
-- In-memory frame capture (~1ms overhead per frame)
+- In-memory frame capture from OpenGL framebuffer (~1-2ms overhead per frame)
 - ModernGL texture creation and shader processing
 - One-time blur computation when pause is triggered
 
 ### Performance Impact
-- **In-memory capture**: ~1ms per frame (negligible)
+- **In-memory capture**: ~1-2ms per frame (reads from OpenGL framebuffer)
 - **Screenshot save**: Only when Ctrl-S is pressed (~10-50ms depending on disk speed)
 - **Blur generation**: One-time on pause (~5-10ms)
 - **Memory usage**: One screenshot surface (~5MB for 1280x720 resolution)
