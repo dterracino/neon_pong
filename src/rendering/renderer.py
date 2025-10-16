@@ -15,6 +15,18 @@ from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_TYPE
 logger = logging.getLogger(__name__)
 
 @dataclass
+class TextEffects:
+    """Text rendering effects configuration"""
+    stroke_width: float = 0.0
+    stroke_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0)
+    shadow_offset: Tuple[float, float] = (0.0, 0.0)
+    shadow_blur: float = 0.0
+    shadow_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.5)
+    gradient_enabled: bool = False
+    gradient_color_top: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0)
+    gradient_color_bottom: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0)
+
+@dataclass
 class TextDrawCall:
     """A record to hold all the information for a single text draw call."""
     text: str
@@ -25,6 +37,8 @@ class TextDrawCall:
     pygame_color: Tuple[int, int, int]
     font_name: Optional[str]
     centered: bool
+    effects: Optional[TextEffects] = None
+    render_before_bloom: bool = False  # If True, render to scene_fbo (with bloom)
 
 class Renderer:
     """Handles all ModernGL rendering"""
@@ -47,6 +61,13 @@ class Renderer:
         assert text_program_maybe is not None, "Failed to load text shader!"
         self.text_program = text_program_maybe
         logger.debug("Text shader loaded successfully")
+        
+        # Load text effects shader
+        logger.debug("Loading text effects shader")
+        text_effects_program_maybe = shader_manager.load_shader('text_effects', 'text_effects.vert', 'text_effects.frag')
+        assert text_effects_program_maybe is not None, "Failed to load text effects shader!"
+        self.text_effects_program = text_effects_program_maybe
+        logger.debug("Text effects shader loaded successfully")
 
         # Create post processor
         logger.debug("Creating post processor")
@@ -59,6 +80,11 @@ class Renderer:
         self.text_vbo = self.ctx.buffer(reserve=1024 * 6 * 4 * 4, dynamic=True)
         self.text_vao = self.ctx.vertex_array(
             self.text_program,
+            [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
+        )
+        # VAO for effects shader (same vertex format)
+        self.text_effects_vao = self.ctx.vertex_array(
+            self.text_effects_program,
             [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
         )
         logger.debug("Text batching VBO/VAO created")
@@ -339,28 +365,54 @@ class Renderer:
         self.ctx.disable(moderngl.BLEND)
 
     def draw_text(self, text: str, x: float, y: float, size: int, color: Tuple[float, float, float, float],
-                  font_name: Optional[str] = None, centered: bool = False):
-        """Queues text to be drawn in a batch at the end of the frame."""
+                  font_name: Optional[str] = None, centered: bool = False, effects: Optional[TextEffects] = None,
+                  render_before_bloom: bool = False):
+        """Queues text to be drawn in a batch at the end of the frame.
+        
+        Args:
+            text: Text to render
+            x, y: Screen position
+            size: Font size in pixels
+            color: RGBA color (normalized 0-1)
+            font_name: Optional font file name
+            centered: Center text at x position
+            effects: Optional TextEffects for stroke, shadow, gradient
+            render_before_bloom: If True, renders to scene (with bloom). If False, renders to UI overlay (no bloom)
+        """
         pygame_color = (
             int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
         )
         
         draw_call = TextDrawCall(
-            text, x, y, size, color, pygame_color, font_name, centered
+            text, x, y, size, color, pygame_color, font_name, centered, effects, render_before_bloom
         )
         self.text_batch.append(draw_call)
 
     def _flush_text_batch(self):
-        """Renders all queued text in a single draw call."""
+        """Renders all queued text, separating bloom and no-bloom batches."""
         if not self.text_batch:
             return
-
+        
+        # Separate text into bloom and no-bloom batches
+        bloom_batch = [call for call in self.text_batch if call.render_before_bloom]
+        no_bloom_batch = [call for call in self.text_batch if not call.render_before_bloom]
+        
+        # Render bloom batch to scene_fbo (will get bloom effect)
+        if bloom_batch:
+            self._render_text_batch(bloom_batch, self.scene_fbo)
+        
+        # Render no-bloom batch to ui_fbo (no bloom effect)
+        if no_bloom_batch:
+            self._render_text_batch(no_bloom_batch, self.ui_fbo)
+    
+    def _render_text_batch(self, batch: List[TextDrawCall], target_fbo):
+        """Renders a batch of text to the specified framebuffer."""
         # --- Stage 1: Render all text surfaces and calculate atlas size ---
-        # Use cache for surface rendering to avoid redundant pygame.font.render calls
         rendered_surfaces = []
         total_width = 0
         max_height = 0
-        for call in self.text_batch:
+        
+        for call in batch:
             # Create cache key from text properties
             cache_key = (call.text, call.size, call.pygame_color, call.font_name)
             
@@ -392,8 +444,9 @@ class Renderer:
         
         all_vertices = []
         current_x = 0
+        
         for i, surface in enumerate(rendered_surfaces):
-            call = self.text_batch[i]
+            call = batch[i]
             
             # Blit surface onto the atlas, aligned to the BOTTOM
             blit_y = max_height - surface.get_height()
@@ -403,7 +456,7 @@ class Renderer:
             u1 = current_x / total_width
             v1 = blit_y / max_height  # This is the BOTTOM of the UV range
             u2 = (current_x + surface.get_width()) / total_width
-            v2 = (blit_y + surface.get_height()) / max_height # This is the TOP of the UV range
+            v2 = (blit_y + surface.get_height()) / max_height  # This is the TOP of the UV range
 
             # Calculate screen position in NDC
             draw_x = call.x
@@ -417,44 +470,77 @@ class Renderer:
             
             # Vertices for two triangles (a quad), with UVs correctly flipped
             # pos.x, pos.y, uv.x, uv.y
-            v_bl = (ndc_x,       ndc_y - ndc_h, u1, v2) # Bottom-left vertex uses TOP UV coord
-            v_br = (ndc_x + ndc_w, ndc_y - ndc_h, u2, v2) # Bottom-right vertex uses TOP UV coord
-            v_tl = (ndc_x,       ndc_y,       u1, v1) # Top-left vertex uses BOTTOM UV coord
-            v_tr = (ndc_x + ndc_w, ndc_y,       u2, v1) # Top-right vertex uses BOTTOM UV coord
+            v_bl = (ndc_x,       ndc_y - ndc_h, u1, v2)  # Bottom-left vertex uses TOP UV coord
+            v_br = (ndc_x + ndc_w, ndc_y - ndc_h, u2, v2)  # Bottom-right vertex uses TOP UV coord
+            v_tl = (ndc_x,       ndc_y,       u1, v1)  # Top-left vertex uses BOTTOM UV coord
+            v_tr = (ndc_x + ndc_w, ndc_y,       u2, v1)  # Top-right vertex uses BOTTOM UV coord
 
             all_vertices.extend([*v_tl, *v_bl, *v_tr, *v_bl, *v_br, *v_tr])
             
             current_x += surface.get_width()
 
         # --- Stage 3: Upload data to GPU and render ---
-        # Create atlas texture. We pass the data raw (un-flipped) and handle the
-        # vertical flip in our vertex UV coordinates.
         atlas_data = pygame.image.tostring(atlas_surface, 'RGBA')
         atlas_texture = self.ctx.texture(atlas_surface.get_size(), 4, atlas_data)
         
         atlas_texture.repeat_x = False
         atlas_texture.repeat_y = False
-        
         atlas_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
 
         # Write vertex data to dynamic VBO
         vertex_np = np.array(all_vertices, dtype='f4')
         self.text_vbo.write(vertex_np.tobytes())
 
-        # Switch to UI framebuffer to draw
-        self.ui_fbo.use()
+        # Switch to target framebuffer
+        target_fbo.use()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
 
         atlas_texture.use(0)
-        self.text_program['tex'] = 0
-        self.text_program['color'] = (1.0, 1.0, 1.0, 1.0) # Color is baked into texture
-
-        # Render just the part of the VBO we used
-        self.text_vao.render(moderngl.TRIANGLES, vertices=len(all_vertices) // 4)
+        
+        # Check if any text in this batch has effects
+        has_effects = any(call.effects is not None for call in batch)
+        
+        if has_effects:
+            # Use effects shader and set uniforms for each text
+            # For simplicity, we'll render each text separately when effects are used
+            # (could be optimized to batch texts with same effects)
+            for i, call in enumerate(batch):
+                if call.effects:
+                    self._render_text_with_effects(call, atlas_texture, all_vertices[i*24:(i+1)*24])
+                else:
+                    # Use basic shader for this text
+                    self.text_program['tex'] = 0
+                    self.text_program['color'] = call.color
+                    # Render just this text's vertices
+                    self.text_vao.render(moderngl.TRIANGLES, vertices=6)
+        else:
+            # Use basic shader for all text
+            self.text_program['tex'] = 0
+            self.text_program['color'] = (1.0, 1.0, 1.0, 1.0)  # Color is baked into texture
+            self.text_vao.render(moderngl.TRIANGLES, vertices=len(all_vertices) // 4)
 
         self.ctx.disable(moderngl.BLEND)
         atlas_texture.release()
+    
+    def _render_text_with_effects(self, call: TextDrawCall, atlas_texture, vertices):
+        """Render a single text with effects applied."""
+        effects = call.effects or TextEffects()
+        
+        # Set effect uniforms
+        self.text_effects_program['tex'] = 0
+        self.text_effects_program['color'] = call.color
+        self.text_effects_program['strokeWidth'] = effects.stroke_width
+        self.text_effects_program['strokeColor'] = effects.stroke_color
+        self.text_effects_program['shadowOffset'] = effects.shadow_offset
+        self.text_effects_program['shadowBlur'] = effects.shadow_blur
+        self.text_effects_program['shadowColor'] = effects.shadow_color
+        self.text_effects_program['gradientEnabled'] = effects.gradient_enabled
+        self.text_effects_program['gradientColorTop'] = effects.gradient_color_top
+        self.text_effects_program['gradientColorBottom'] = effects.gradient_color_bottom
+        
+        # Render using effects shader
+        self.text_effects_vao.render(moderngl.TRIANGLES, vertices=6)
 
     def draw_text_direct(self, text: str, x: float, y: float, size: int, 
                         color: Tuple[float, float, float, float],
