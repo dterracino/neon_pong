@@ -112,6 +112,10 @@ class Renderer:
             self.background_program = shader_manager.load_shader(
                 'background_retrowave', 'basic.vert', 'background_retrowave.frag'
             )
+        elif BACKGROUND_TYPE == "retro":
+            self.background_program = shader_manager.load_shader(
+                'background_retro', 'basic.vert', 'background_retro.frag'
+            )
         
         if self.background_program:
             self.background_vao = ctx.simple_vertex_array(

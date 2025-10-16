@@ -14,10 +14,10 @@ def test_demo_structure():
     
     # Check that SHADERS dict exists
     assert hasattr(demo_backgrounds, 'SHADERS'), "SHADERS dict not found"
-    assert len(demo_backgrounds.SHADERS) == 4, "Should have 4 shaders defined"
+    assert len(demo_backgrounds.SHADERS) == 5, "Should have 5 shaders defined"
     
     # Check that all required shaders are present
-    expected_shaders = ['starfield', 'plasma', 'waves', 'retrowave']
+    expected_shaders = ['starfield', 'plasma', 'waves', 'retrowave', 'retro']
     for shader in expected_shaders:
         assert shader in demo_backgrounds.SHADERS, f"Shader '{shader}' not found in SHADERS"
     

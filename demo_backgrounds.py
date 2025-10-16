@@ -44,6 +44,13 @@ SHADERS = {
         'fragment': 'background_retrowave.frag',
         'key': pygame.K_4,
         'description': 'Classic synthwave with mountains, sun, and grid'
+    },
+    'retro': {
+        'name': 'Retro',
+        'vertex': 'basic.vert',
+        'fragment': 'background_retro.frag',
+        'key': pygame.K_5,
+        'description': 'Synthwave with large striped sun and wireframe mountains'
     }
 }
 
@@ -121,6 +128,7 @@ class BackgroundShaderDemo:
         print("  2 - Plasma")
         print("  3 - Waves")
         print("  4 - Retrowave")
+        print("  5 - Retro")
         print("  H - Show current shader info")
         print("  ESC - Exit")
         print("=" * 80 + "\n")

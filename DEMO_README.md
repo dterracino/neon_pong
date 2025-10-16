@@ -32,6 +32,12 @@ An interactive demo application to visualize all background shaders used in Neon
    - Perspective grid floor
    - Starfield
 
+5. **Retro** (Press 5)
+   - Synthwave with large striped sun
+   - Wireframe mountains (solid fill with cyan wire)
+   - Pink/magenta perspective grid
+   - Based on classic 80s aesthetic
+
 ## Usage
 
 ### Running the Demo
@@ -50,6 +56,7 @@ python demo_backgrounds.py
 - **2** - Switch to Plasma shader
 - **3** - Switch to Waves shader
 - **4** - Switch to Retrowave shader
+- **5** - Switch to Retro shader
 - **H** - Print current shader information to console
 - **ESC** - Exit the demo
 
@@ -69,7 +76,8 @@ When running, each shader provides unique visual effects:
 - **Starfield**: Deep space with twinkling stars and nebula clouds
 - **Plasma**: Flowing neon colors with smooth transitions
 - **Waves**: Retro-style animated waves with grid overlay
-- **Retrowave**: Complete synthwave scene with all classic elements
+- **Retrowave**: Complete synthwave scene with all classic elements (for debugging)
+- **Retro**: Classic 80s synthwave with large striped sun and wireframe mountains
 
 ## Development
 
