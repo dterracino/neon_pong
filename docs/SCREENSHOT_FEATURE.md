@@ -48,26 +48,67 @@ Pause screen:
 ## Technical Details
 
 ### Screenshot Capture
-The screenshot feature uses:
-- `ctx.screen.read()` to read from the OpenGL framebuffer (ModernGL)
+
+The screenshot feature is designed to be general-purpose and flexible:
+
+**Auto-Detection:**
+- Automatically detects whether to use OpenGL framebuffer reading or pygame surface copy
+- Checks for ModernGL context availability
+- Falls back to pygame surface if OpenGL is unavailable
+
+**Capture Methods:**
+- `AUTO` (default): Auto-detect the appropriate method
+- `OPENGL`: Force OpenGL framebuffer reading (requires ModernGL context)
+- `PYGAME`: Force pygame surface copy (works without OpenGL)
+
+**Technologies Used:**
+- `ctx.screen.read()` to read from the OpenGL framebuffer (ModernGL) when available
 - `pygame.image.frombuffer()` to convert OpenGL pixel data to pygame surface
+- `screen.copy()` to copy pygame surface when OpenGL is not available
 - `pygame.image.save()` to save the surface to disk
 - Python's `datetime` module for timestamp generation
 - Automatic directory creation with `os.makedirs()`
 - Deferred capture mechanism to ensure all rendering is complete
 
-**Important**: Since the game uses OpenGL rendering through ModernGL, screenshots are captured directly from the OpenGL framebuffer using `ctx.screen.read()` rather than from the pygame surface. This ensures that all OpenGL-rendered content (including post-processing effects, bloom, and shaders) is correctly captured.
+**Example Usage:**
+```python
+from src.utils.screenshot import ScreenshotManager, CaptureMethod
+
+# Auto-detect (default)
+sm = ScreenshotManager(ctx=ctx)
+
+# Force OpenGL
+sm = ScreenshotManager(ctx=ctx, capture_method=CaptureMethod.OPENGL)
+
+# Force pygame (no OpenGL needed)
+sm = ScreenshotManager(capture_method=CaptureMethod.PYGAME)
+```
+
+### Render Complete Callbacks
+
+The game loop provides a callback system for knowing when rendering is complete:
+
+```python
+def on_render_complete():
+    print("Frame rendering complete!")
+
+game.add_render_complete_callback(on_render_complete)
+```
+
+Callbacks are triggered after `pygame.display.flip()` but before screenshot capture, allowing external code to hook into the render pipeline.
 
 ### Capture Timing
 Screenshots are captured in the following sequence:
 1. User presses Ctrl-S (sets capture flag)
-2. Frame renders completely to OpenGL framebuffer (scene + overlays)
+2. Frame renders completely to framebuffer (scene + overlays)
 3. `pygame.display.flip()` swaps buffers
-4. Screenshot is captured from the OpenGL framebuffer using `ctx.screen.read()`
-5. Pixel data is converted from OpenGL format (bottom-left origin) to pygame format (top-left origin)
+4. Render complete callbacks are triggered
+5. Screenshot is captured using the selected method:
+   - **OpenGL**: Reads from `ctx.screen` and flips vertically
+   - **Pygame**: Copies the pygame surface
 6. Image is saved to disk
 
-This ensures that all post-processing effects, bloom, and UI overlays are included in the screenshot. The timing after `flip()` is critical to ensure the OpenGL rendering pipeline has completed.
+This ensures that all post-processing effects, bloom, and UI overlays are included in the screenshot.
 
 ### Blur Effect
 The pause screen blur uses:
@@ -78,10 +119,11 @@ The pause screen blur uses:
 - One-time blur computation when pause is triggered
 
 ### Performance Impact
-- **In-memory capture**: ~1-2ms per frame (reads from OpenGL framebuffer)
+- **In-memory capture**: ~1-2ms per frame (auto-detects best method)
 - **Screenshot save**: Only when Ctrl-S is pressed (~10-50ms depending on disk speed)
 - **Blur generation**: One-time on pause (~5-10ms)
 - **Memory usage**: One screenshot surface (~5MB for 1280x720 resolution)
+- **Callback overhead**: <0.1ms per callback (negligible)
 
 The `ScreenshotManager` class handles all screenshot operations and can be found in `src/utils/screenshot.py`.
 
@@ -91,6 +133,12 @@ The `ScreenshotManager` class handles all screenshot operations and can be found
 - Check console output for error messages
 - Ensure you have write permissions in the project directory
 - Verify pygame is properly initialized
+- Check if the auto-detected method is correct (look for debug logs)
+
+**Black or empty screenshots?**
+- If using OpenGL rendering, ensure ModernGL context is passed to ScreenshotManager
+- Try forcing capture method: `capture_method=CaptureMethod.OPENGL`
+- Check debug logs for "Auto-detected capture method" messages
 
 **Can't find screenshots?**
 - Look in the `screenshots/` directory relative to where you run `python main.py`

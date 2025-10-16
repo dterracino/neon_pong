@@ -121,7 +121,39 @@ class Game:
         # Flag to trigger screenshot capture
         self.pending_screenshot = False
         
+        # Render complete callbacks
+        self._render_complete_callbacks = []
+        
         logger.debug("Game initialization complete")
+    
+    def add_render_complete_callback(self, callback):
+        """
+        Add a callback to be called when frame rendering is complete
+        
+        Args:
+            callback: Callable that takes no arguments
+        """
+        self._render_complete_callbacks.append(callback)
+        logger.debug("Render complete callback added")
+    
+    def remove_render_complete_callback(self, callback):
+        """
+        Remove a previously added render complete callback
+        
+        Args:
+            callback: Callback to remove
+        """
+        if callback in self._render_complete_callbacks:
+            self._render_complete_callbacks.remove(callback)
+            logger.debug("Render complete callback removed")
+    
+    def _trigger_render_complete_callbacks(self):
+        """Trigger all registered render complete callbacks"""
+        for callback in self._render_complete_callbacks:
+            try:
+                callback()
+            except Exception as e:
+                logger.error("Error in render complete callback: %s", e)
         
     def run(self):
         """Main game loop"""
@@ -161,6 +193,9 @@ class Game:
                 
             # Swap buffers
             pygame.display.flip()
+            
+            # Trigger render complete callbacks
+            self._trigger_render_complete_callbacks()
             
             # Capture screenshot after all rendering is complete (post-flip)
             if self.pending_screenshot:
