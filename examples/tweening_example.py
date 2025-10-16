@@ -39,8 +39,12 @@ class AnimatedBall:
     
     def move_to(self, target_x, target_y, duration=1.0, ease_type=EaseType.QUAD_IN_OUT):
         """Smoothly move the ball to a target position"""
-        # Clear existing tweens
-        self.tween_manager.clear()
+        # Remove existing position tweens if any
+        # This allows the ball to change direction mid-animation
+        if self.x_tween and not self.x_tween.is_complete:
+            self.tween_manager.tweens.remove(self.x_tween)
+        if self.y_tween and not self.y_tween.is_complete:
+            self.tween_manager.tweens.remove(self.y_tween)
         
         # Create new tweens for x and y
         self.x_tween = self.tween_manager.add_tween(
