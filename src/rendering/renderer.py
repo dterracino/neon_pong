@@ -108,6 +108,10 @@ class Renderer:
             self.background_program = shader_manager.load_shader(
                 'background_waves', 'basic.vert', 'background_waves.frag'
             )
+        elif BACKGROUND_TYPE == "retrowave":
+            self.background_program = shader_manager.load_shader(
+                'background_retrowave', 'basic.vert', 'background_retrowave.frag'
+            )
         
         if self.background_program:
             self.background_vao = ctx.simple_vertex_array(

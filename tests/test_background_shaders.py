@@ -53,6 +53,20 @@ def test_shader_syntax():
         print("✗ Waves shader file not found")
         tests_passed = False
     
+    # Check retrowave shader
+    retrowave_path = os.path.join(shader_dir, 'background_retrowave.frag')
+    if os.path.exists(retrowave_path):
+        with open(retrowave_path, 'r') as f:
+            content = f.read()
+            if '#version 330' in content and 'void main()' in content:
+                print("✓ Retrowave shader file is valid")
+            else:
+                print("✗ Retrowave shader file has syntax issues")
+                tests_passed = False
+    else:
+        print("✗ Retrowave shader file not found")
+        tests_passed = False
+    
     # Check that they have the required uniforms
     with open(starfield_path, 'r') as f:
         content = f.read()
@@ -79,6 +93,15 @@ def test_shader_syntax():
             print("✗ Waves shader missing required uniforms")
             tests_passed = False
     
+    # retrowave_path already defined above
+    with open(retrowave_path, 'r') as f:
+        content = f.read()
+        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
+            print("✓ Retrowave shader has required uniforms")
+        else:
+            print("✗ Retrowave shader missing required uniforms")
+            tests_passed = False
+    
     return tests_passed
 
 def test_constants_updated():
@@ -87,7 +110,7 @@ def test_constants_updated():
     try:
         from src.utils.constants import BACKGROUND_TYPE
         print(f"✓ BACKGROUND_TYPE constant found: {BACKGROUND_TYPE}")
-        if BACKGROUND_TYPE in ["starfield", "plasma", "waves", "solid"]:
+        if BACKGROUND_TYPE in ["starfield", "plasma", "waves", "retrowave", "solid"]:
             print(f"✓ BACKGROUND_TYPE has valid value")
             return True
         else:
