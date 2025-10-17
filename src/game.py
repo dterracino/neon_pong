@@ -11,6 +11,7 @@ from src.rendering.renderer import Renderer
 from src.audio.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
 from src.utils.fps_counter import FPSCounter
+from src.utils.screenshot import ScreenshotManager
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, FPS, WINDOW_TITLE,
     FPS_DISPLAY_SHOW_INSTANT, FPS_DISPLAY_SHOW_AVERAGE,
@@ -95,9 +96,15 @@ class Game:
         logger.debug("Initializing scene manager")
         self.scene_manager = SceneManager()
         
+        # Initialize screenshot manager (needs to be before menu scene)
+        logger.debug("Initializing screenshot manager")
+        self.screenshot_manager = ScreenshotManager(ctx=self.ctx)
+        logger.debug("Screenshot manager initialized")
+        
         # Start with menu scene
         logger.debug("Creating initial menu scene")
-        initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager)
+        initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager,
+                                 self.screenshot_manager)
         logger.debug("Pushing menu scene to scene manager")
         self.scene_manager.push_scene(initial_scene)
         
@@ -111,7 +118,42 @@ class Game:
         self.fps_counter = FPSCounter(average_window=FPS_DISPLAY_AVERAGE_WINDOW)
         logger.debug("FPS counter initialized")
         
+        # Flag to trigger screenshot capture
+        self.pending_screenshot = False
+        
+        # Render complete callbacks
+        self._render_complete_callbacks = []
+        
         logger.debug("Game initialization complete")
+    
+    def add_render_complete_callback(self, callback):
+        """
+        Add a callback to be called when frame rendering is complete
+        
+        Args:
+            callback: Callable that takes no arguments
+        """
+        self._render_complete_callbacks.append(callback)
+        logger.debug("Render complete callback added")
+    
+    def remove_render_complete_callback(self, callback):
+        """
+        Remove a previously added render complete callback
+        
+        Args:
+            callback: Callback to remove
+        """
+        if callback in self._render_complete_callbacks:
+            self._render_complete_callbacks.remove(callback)
+            logger.debug("Render complete callback removed")
+    
+    def _trigger_render_complete_callbacks(self):
+        """Trigger all registered render complete callbacks"""
+        for callback in self._render_complete_callbacks:
+            try:
+                callback()
+            except Exception as e:
+                logger.error("Error in render complete callback: %s", e)
         
     def run(self):
         """Main game loop"""
@@ -152,6 +194,21 @@ class Game:
             # Swap buffers
             pygame.display.flip()
             
+            # Trigger render complete callbacks
+            self._trigger_render_complete_callbacks()
+            
+            # Capture screenshot after all rendering is complete (post-flip)
+            if self.pending_screenshot:
+                try:
+                    filepath = self.screenshot_manager.capture(self.screen)
+                    logger.info("Screenshot captured: %s", filepath)
+                except Exception as e:
+                    logger.error("Failed to capture screenshot: %s", e)
+                self.pending_screenshot = False
+            
+            # Always capture to memory for pause screen (non-blocking, minimal overhead)
+            self.screenshot_manager.capture_to_memory(self.screen)
+            
             if frame_count < 5:
                 logger.debug("Frame %d complete", frame_count)
             
@@ -174,6 +231,10 @@ class Game:
                     self.fps_counter.toggle_visibility()
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
                     logger.debug("FPS display %s", status)
+                elif event.key == pygame.K_s and (event.mod & pygame.KMOD_CTRL):
+                    # Schedule screenshot capture after frame completes
+                    self.pending_screenshot = True
+                    logger.debug("Screenshot scheduled for capture after frame completion")
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:

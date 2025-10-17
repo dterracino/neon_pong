@@ -28,11 +28,13 @@ class GameScene(Scene):
     """Main game scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
-                 ai_enabled: bool = False, ai_difficulty: str = 'normal'):
+                 ai_enabled: bool = False, ai_difficulty: str = 'normal',
+                 screenshot_manager=None):
         logger.debug("Creating game scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
+        self.screenshot_manager = screenshot_manager
         self.ai_enabled = ai_enabled
         self.ai_difficulty = ai_difficulty
         
@@ -72,8 +74,9 @@ class GameScene(Scene):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_ESCAPE, pygame.K_p):
-                # Pause game
-                pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager)
+                # Pause game - pass screenshot manager for blurred background
+                pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
+                                        self.screenshot_manager)
                 self.scene_manager.push_scene(pause_scene)
     
     def update(self, dt: float):

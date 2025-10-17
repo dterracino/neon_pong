@@ -13,6 +13,7 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎯 Single-player vs AI or two-player local multiplayer
 - 🤖 AI opponent with ball-tracking behavior
 - 💫 Particle effects and screen shake
+- 📸 **Screenshot capture** with Ctrl-S
 - 🎬 **Comprehensive tweening library** with 31 easing functions for smooth animations
 - 🔍 Comprehensive debug logging for troubleshooting
 
@@ -53,6 +54,8 @@ You can also run `python tests/test_debug_output.py` to see what normal debug ou
 - **Player 1**: W (up) / S (down)
 - **Player 2**: Up Arrow / Down Arrow (in 2 Player mode)
 - **Pause**: ESC or P
+- **Screenshot**: Ctrl-S (saves to `screenshots/` directory)
+- **FPS Display**: F3 (toggle performance metrics)
 
 ## Project Structure
 
