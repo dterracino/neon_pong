@@ -74,6 +74,9 @@ class GameScene(Scene):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_ESCAPE, pygame.K_p):
+                # Take screenshot for pause background before pausing
+                if self.screenshot_manager:
+                    self.screenshot_manager.capture_to_memory(self.renderer.screen)
                 # Pause game - pass screenshot manager for blurred background
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
                                         self.screenshot_manager)

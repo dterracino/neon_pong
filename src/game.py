@@ -206,8 +206,6 @@ class Game:
                     logger.error("Failed to capture screenshot: %s", e)
                 self.pending_screenshot = False
             
-            # Always capture to memory for pause screen (non-blocking, minimal overhead)
-            self.screenshot_manager.capture_to_memory(self.screen)
             
             if frame_count < 5:
                 logger.debug("Frame %d complete", frame_count)
