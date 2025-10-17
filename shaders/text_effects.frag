@@ -1,20 +1,20 @@
 #version 330
 
 uniform sampler2D tex;
-uniform vec4 color;
 
-// Text effects uniforms
-uniform float strokeWidth;
-uniform vec4 strokeColor;
-uniform vec2 shadowOffset;
-uniform float shadowBlur;
-uniform vec4 shadowColor;
-uniform bool gradientEnabled;
-uniform vec4 gradientColorTop;
-uniform vec4 gradientColorBottom;
-
+// Effect parameters from vertex shader (interpolated per-fragment)
 in vec2 uv;
-in vec2 fragPos;  // Fragment position in texture coordinates for gradient
+in vec2 fragPos;
+in vec4 v_color;
+in float v_stroke_width;
+in vec4 v_stroke_color;
+in vec2 v_shadow_offset;
+in float v_shadow_blur;
+in vec4 v_shadow_color;
+in float v_gradient_enabled;
+in vec4 v_gradient_top;
+in vec4 v_gradient_bottom;
+
 out vec4 fragColor;
 
 // SDF-based stroke effect
@@ -48,29 +48,29 @@ float getShadow(sampler2D tex, vec2 uv, vec2 offset, float blur) {
 
 void main() {
     vec4 texColor = texture(tex, uv);
-    vec4 finalColor = texColor * color;
+    vec4 finalColor = texColor * v_color;
     
     // Apply gradient if enabled
-    if (gradientEnabled) {
+    if (v_gradient_enabled > 0.5) {
         // Use the V coordinate (vertical) for gradient
-        vec4 gradColor = mix(gradientColorBottom, gradientColorTop, uv.y);
+        vec4 gradColor = mix(v_gradient_bottom, v_gradient_top, uv.y);
         finalColor.rgb *= gradColor.rgb;
     }
     
     // Apply stroke effect
-    if (strokeWidth > 0.0) {
-        float strokeMask = getStroke(texColor.a, strokeWidth * 0.01);
+    if (v_stroke_width > 0.0) {
+        float strokeMask = getStroke(texColor.a, v_stroke_width * 0.01);
         float fillMask = texColor.a;
         
         // Blend stroke and fill
-        vec4 stroke = vec4(strokeColor.rgb, strokeMask);
+        vec4 stroke = vec4(v_stroke_color.rgb, strokeMask);
         finalColor = mix(stroke, finalColor, fillMask);
     }
     
-    // Apply shadow effect (rendered in a separate pass would be better, but this works)
-    if (length(shadowOffset) > 0.0 || shadowBlur > 0.0) {
-        float shadowMask = getShadow(tex, uv, shadowOffset * 0.001, shadowBlur * 0.001);
-        vec4 shadow = vec4(shadowColor.rgb, shadowMask * shadowColor.a);
+    // Apply shadow effect
+    if (length(v_shadow_offset) > 0.0 || v_shadow_blur > 0.0) {
+        float shadowMask = getShadow(tex, uv, v_shadow_offset * 0.001, v_shadow_blur * 0.001);
+        vec4 shadow = vec4(v_shadow_color.rgb, shadowMask * v_shadow_color.a);
         
         // Blend shadow behind text
         finalColor.rgb = mix(shadow.rgb, finalColor.rgb, finalColor.a);

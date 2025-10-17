@@ -211,38 +211,51 @@ Benchmarks various scenarios:
 
 ## Technical Details
 
-### Per-Text Effect Application
+### Single-Call Batched Rendering with Per-Vertex Effects
 
-The system renders each text element individually to ensure independent effect parameters:
+The system uses **vertex attributes** to pass effect parameters, enabling true batched rendering with a single draw call:
 
-1. **Atlas Creation**: All text surfaces are packed into a single texture atlas (efficient)
-2. **Per-Text Rendering**: Each text quad is rendered individually with its own:
-   - Vertex data (position and UV coordinates)
-   - Effect uniforms (stroke, shadow, gradient parameters)
-   - Color and base texture
+1. **Extended Vertex Format**: Each vertex contains position, UV, and all effect parameters (29 floats total)
+2. **Single Atlas**: All text surfaces packed into one texture
+3. **Single VBO Write**: All vertices with effect data written at once
+4. **Single Render Call**: One draw call renders all text with independent effects
+
+**Vertex Layout:**
+```
+Position (2) + UV (2) + Color (4) + 
+StrokeWidth (1) + StrokeColor (4) + 
+ShadowOffset (2) + ShadowBlur (1) + ShadowColor (4) + 
+GradientEnabled (1) + GradientTop (4) + GradientBottom (4) = 29 floats
+```
 
 **Implementation:**
 ```python
-# For each text in the batch:
-for i, call in enumerate(batch):
-    # Write this text's vertices to VBO
-    text_vertices = all_vertices[i*24:(i+1)*24]
-    self.text_vbo.write(vertex_data)
+# Build ALL vertices with effect data
+for call in batch:
+    effects = call.effects or TextEffects()
+    effect_data = [
+        *call.color, effects.stroke_width, *effects.stroke_color,
+        *effects.shadow_offset, effects.shadow_blur, *effects.shadow_color,
+        1.0 if effects.gradient_enabled else 0.0,
+        *effects.gradient_color_top, *effects.gradient_color_bottom
+    ]
     
-    if call.effects:
-        # Set THIS text's effect uniforms
-        shader['strokeWidth'] = call.effects.stroke_width
-        shader['shadowOffset'] = call.effects.shadow_offset
-        # ... etc
-        
-        # Render this text with effects
-        render(6 vertices)
-    else:
-        # Render without effects
-        render(6 vertices)
+    # Create 6 vertices (2 triangles) with position, UV, and effect data
+    vertices.extend([
+        pos_x, pos_y, uv_x, uv_y, *effect_data,  # Vertex 1
+        pos_x, pos_y, uv_x, uv_y, *effect_data,  # Vertex 2
+        # ... (6 vertices total per text quad)
+    ])
+
+# Single VBO write
+vbo.write(all_vertices)
+
+# Single render call for ALL text
+vao.render(TRIANGLES, vertices=total_vertex_count)
 ```
 
-This ensures each text has completely independent effect parameters.
+**Shader Processing:**
+The vertex shader receives effect parameters as attributes and passes them to the fragment shader where they're applied per-fragment. Since all 6 vertices of a quad have identical effect data, the interpolated values in the fragment shader are consistent across the quad.
 
 ### Coordinate Systems
 

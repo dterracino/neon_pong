@@ -76,16 +76,23 @@ class Renderer:
         # --- Batching setup for Text ---
         self.text_batch: List[TextDrawCall] = []
         # Create a dynamic VBO with a large-ish reserve size
-        # 1024 text calls * 6 vertices per call * 4 floats per vertex * 4 bytes per float
-        self.text_vbo = self.ctx.buffer(reserve=1024 * 6 * 4 * 4, dynamic=True)
+        # Extended vertex format: position(2) + uv(2) + color(4) + stroke_width(1) + stroke_color(4) + 
+        #                         shadow_offset(2) + shadow_blur(1) + shadow_color(4) + 
+        #                         gradient_enabled(1) + gradient_top(4) + gradient_bottom(4) = 29 floats per vertex
+        # 1024 text calls * 6 vertices per call * 29 floats per vertex * 4 bytes per float
+        self.text_vbo = self.ctx.buffer(reserve=1024 * 6 * 29 * 4, dynamic=True)
         self.text_vao = self.ctx.vertex_array(
             self.text_program,
             [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
         )
-        # VAO for effects shader (same vertex format)
+        # VAO for effects shader with extended vertex format
         self.text_effects_vao = self.ctx.vertex_array(
             self.text_effects_program,
-            [(self.text_vbo, '2f 2f', 'in_position', 'in_uv')]
+            [(self.text_vbo, '2f 2f 4f 1f 4f 2f 1f 4f 1f 4f 4f', 
+              'in_position', 'in_uv', 'in_color', 
+              'in_stroke_width', 'in_stroke_color',
+              'in_shadow_offset', 'in_shadow_blur', 'in_shadow_color',
+              'in_gradient_enabled', 'in_gradient_top', 'in_gradient_bottom')]
         )
         logger.debug("Text batching VBO/VAO created")
 
@@ -406,7 +413,7 @@ class Renderer:
             self._render_text_batch(no_bloom_batch, self.ui_fbo)
     
     def _render_text_batch(self, batch: List[TextDrawCall], target_fbo):
-        """Renders a batch of text to the specified framebuffer."""
+        """Renders a batch of text to the specified framebuffer with single draw call."""
         # --- Stage 1: Render all text surfaces and calculate atlas size ---
         rendered_surfaces = []
         total_width = 0
@@ -436,7 +443,7 @@ class Renderer:
         if len(self.text_surface_cache) > self.max_cache_size:
             self._manage_text_cache()
 
-        # --- Stage 2: Create texture atlas and generate vertex data ---
+        # --- Stage 2: Create texture atlas and generate vertex data with effect parameters ---
         if total_width == 0 or max_height == 0:
             return
 
@@ -468,18 +475,35 @@ class Renderer:
             ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
             ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
             
-            # Vertices for two triangles (a quad), with UVs correctly flipped
-            # pos.x, pos.y, uv.x, uv.y
-            v_bl = (ndc_x,       ndc_y - ndc_h, u1, v2)  # Bottom-left vertex uses TOP UV coord
-            v_br = (ndc_x + ndc_w, ndc_y - ndc_h, u2, v2)  # Bottom-right vertex uses TOP UV coord
-            v_tl = (ndc_x,       ndc_y,       u1, v1)  # Top-left vertex uses BOTTOM UV coord
-            v_tr = (ndc_x + ndc_w, ndc_y,       u2, v1)  # Top-right vertex uses BOTTOM UV coord
+            # Get effect parameters (or defaults if no effects)
+            effects = call.effects or TextEffects()
+            
+            # Pack effect data for this text (same for all 6 vertices of the quad)
+            effect_data = [
+                *call.color,  # color (4 floats)
+                effects.stroke_width,  # stroke_width (1 float)
+                *effects.stroke_color,  # stroke_color (4 floats)
+                *effects.shadow_offset,  # shadow_offset (2 floats)
+                effects.shadow_blur,  # shadow_blur (1 float)
+                *effects.shadow_color,  # shadow_color (4 floats)
+                1.0 if effects.gradient_enabled else 0.0,  # gradient_enabled (1 float)
+                *effects.gradient_color_top,  # gradient_top (4 floats)
+                *effects.gradient_color_bottom,  # gradient_bottom (4 floats)
+            ]  # Total: 25 floats of effect data per vertex
+            
+            # Create vertices for two triangles (a quad)
+            # Each vertex: position(2) + uv(2) + effect_data(25) = 29 floats
+            v_bl = (ndc_x,       ndc_y - ndc_h, u1, v2, *effect_data)  # Bottom-left
+            v_br = (ndc_x + ndc_w, ndc_y - ndc_h, u2, v2, *effect_data)  # Bottom-right
+            v_tl = (ndc_x,       ndc_y,       u1, v1, *effect_data)  # Top-left
+            v_tr = (ndc_x + ndc_w, ndc_y,       u2, v1, *effect_data)  # Top-right
 
+            # Two triangles forming a quad
             all_vertices.extend([*v_tl, *v_bl, *v_tr, *v_bl, *v_br, *v_tr])
             
             current_x += surface.get_width()
 
-        # --- Stage 3: Upload data to GPU and render ---
+        # --- Stage 3: Upload data to GPU and render with SINGLE draw call ---
         atlas_data = pygame.image.tostring(atlas_surface, 'RGBA')
         atlas_texture = self.ctx.texture(atlas_surface.get_size(), 4, atlas_data)
         
@@ -487,55 +511,23 @@ class Renderer:
         atlas_texture.repeat_y = False
         atlas_texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
 
+        # Write ALL vertex data to VBO at once
+        vertex_np = np.array(all_vertices, dtype='f4')
+        self.text_vbo.write(vertex_np.tobytes())
+
         # Switch to target framebuffer
         target_fbo.use()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
 
         atlas_texture.use(0)
+        self.text_effects_program['tex'] = 0
         
-        # Render each text element individually with its own effects
-        # Each text can have unique effect parameters
-        for i, call in enumerate(batch):
-            # Get vertices for this specific text (6 vertices = 24 floats per text)
-            text_vertices = all_vertices[i*24:(i+1)*24]
-            vertex_np = np.array(text_vertices, dtype='f4')
-            self.text_vbo.write(vertex_np.tobytes())
-            
-            if call.effects:
-                # Render with effects shader and per-text effect parameters
-                self._render_text_with_effects(call, atlas_texture)
-            else:
-                # Render with basic shader
-                self.text_program['tex'] = 0
-                self.text_program['color'] = call.color
-                self.text_vao.render(moderngl.TRIANGLES, vertices=6)
+        # SINGLE render call for all text with per-vertex effect parameters
+        self.text_effects_vao.render(moderngl.TRIANGLES, vertices=len(all_vertices) // 29)
 
         self.ctx.disable(moderngl.BLEND)
         atlas_texture.release()
-    
-    def _render_text_with_effects(self, call: TextDrawCall, atlas_texture):
-        """Render a single text with effects applied.
-        
-        The vertex data must already be written to the VBO before calling this method.
-        This sets the per-text effect uniforms and renders using the effects shader.
-        """
-        effects = call.effects or TextEffects()
-        
-        # Set effect uniforms (per-text, independent parameters)
-        self.text_effects_program['tex'] = 0
-        self.text_effects_program['color'] = call.color
-        self.text_effects_program['strokeWidth'] = effects.stroke_width
-        self.text_effects_program['strokeColor'] = effects.stroke_color
-        self.text_effects_program['shadowOffset'] = effects.shadow_offset
-        self.text_effects_program['shadowBlur'] = effects.shadow_blur
-        self.text_effects_program['shadowColor'] = effects.shadow_color
-        self.text_effects_program['gradientEnabled'] = effects.gradient_enabled
-        self.text_effects_program['gradientColorTop'] = effects.gradient_color_top
-        self.text_effects_program['gradientColorBottom'] = effects.gradient_color_bottom
-        
-        # Render using effects shader (6 vertices for this specific text)
-        self.text_effects_vao.render(moderngl.TRIANGLES, vertices=6)
 
     def draw_text_direct(self, text: str, x: float, y: float, size: int, 
                         color: Tuple[float, float, float, float],
