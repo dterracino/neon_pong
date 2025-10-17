@@ -1,0 +1,3 @@
+"""
+Audio management package
+"""
