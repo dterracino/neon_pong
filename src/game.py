@@ -77,8 +77,8 @@ class Game:
         
         def on_assets_loaded(sounds: int, music: int, fonts: int):
             """Called when asset loading completes"""
-            logger.info("Asset loading complete: %d sounds, %d music, %d fonts", sounds, music, fonts)
-        
+            self.asset_manager.log_loaded_assets()
+
         sounds, music, fonts = self.asset_manager.preload_assets(on_complete=on_assets_loaded)
         logger.debug("Assets preloaded successfully")
         
