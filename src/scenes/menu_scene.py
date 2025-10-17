@@ -51,7 +51,7 @@ class MenuScene(Scene):
         )
         
         # Try to start menu music
-        # self.audio_manager.play_music('menu_music.ogg')
+        self.audio_manager.play_music('menu_music.ogg')
         logger.debug("Menu scene created with particle effects")
     
     def handle_event(self, event):

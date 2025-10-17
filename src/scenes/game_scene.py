@@ -65,7 +65,7 @@ class GameScene(Scene):
         self.winner = 0
         
         # Try to start game music
-        # self.audio_manager.play_music('game_music.ogg')
+        self.audio_manager.play_music('game_music.ogg')
         logger.debug("Game scene created (paddle1: %.1f,%.1f, ball: %.1f,%.1f, ai_enabled: %s)", 
                     self.paddle1.x, self.paddle1.y, self.ball.x, self.ball.y, self.ai_enabled)
     
