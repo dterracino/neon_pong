@@ -4,7 +4,7 @@ Post-processing effects using ModernGL
 import logging
 import moderngl
 from src.managers.shader_manager import ShaderManager
-from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES
+from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES, POST_EFFECT_TYPE
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -73,6 +73,40 @@ class PostProcessor:
         
         self.final_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
         self.final_fbo = ctx.framebuffer(color_attachments=[self.final_texture])
+        
+        # Load style effect shader based on configuration
+        logger.debug("Loading style effect shader (%s)", POST_EFFECT_TYPE)
+        self.style_effect_program = None
+        self.style_effect_enabled = POST_EFFECT_TYPE != "none"
+        
+        if POST_EFFECT_TYPE == "scanlines":
+            self.style_effect_program = shader_manager.load_shader(
+                'style_scanlines', 'basic.vert', 'scanlines.frag'
+            )
+        elif POST_EFFECT_TYPE == "crt":
+            self.style_effect_program = shader_manager.load_shader(
+                'style_crt', 'basic.vert', 'crt.frag'
+            )
+        elif POST_EFFECT_TYPE == "vhs":
+            self.style_effect_program = shader_manager.load_shader(
+                'style_vhs', 'basic.vert', 'vhs.frag'
+            )
+        
+        if self.style_effect_program:
+            self.style_effect_vao = ctx.simple_vertex_array(
+                self.style_effect_program, self.quad_vbo, 'in_position'
+            )
+            # Create output texture for style effect
+            self.style_effect_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
+            self.style_effect_fbo = ctx.framebuffer(color_attachments=[self.style_effect_texture])
+            logger.debug("Style effect shader loaded successfully")
+        else:
+            self.style_effect_enabled = False
+            logger.debug("No style effect enabled")
+        
+        # Time tracking for animated effects
+        self.time = 0.0
+        
         logger.debug("Post processor initialization complete")
     
     def apply_bloom(self, source_texture: moderngl.Texture) -> moderngl.Texture:
@@ -136,3 +170,35 @@ class PostProcessor:
         self.combine_vao.render(moderngl.TRIANGLE_STRIP)
         
         return self.final_texture
+    
+    def update_time(self, dt: float):
+        """Update time for animated effects"""
+        self.time += dt
+    
+    def apply_style_effect(self, source_texture: moderngl.Texture) -> moderngl.Texture:
+        """Apply style effect (scanlines, CRT, VHS) to source texture
+        
+        Args:
+            source_texture: The texture to apply the effect to (typically after bloom)
+            
+        Returns:
+            The texture with the style effect applied, or the original if no effect is enabled
+        """
+        if not self.style_effect_enabled or not self.style_effect_program:
+            return source_texture
+        
+        # Render style effect to output framebuffer
+        self.style_effect_fbo.use()
+        self.ctx.clear(0.0, 0.0, 0.0, 1.0)
+        source_texture.use(0)
+        
+        if 'tex' in self.style_effect_program:
+            self.style_effect_program['tex'].value = 0  # type: ignore[union-attr]
+        if 'time' in self.style_effect_program:
+            self.style_effect_program['time'].value = self.time  # type: ignore[union-attr]
+        if 'resolution' in self.style_effect_program:
+            self.style_effect_program['resolution'].value = (WINDOW_WIDTH, WINDOW_HEIGHT)  # type: ignore[union-attr]
+        
+        self.style_effect_vao.render(moderngl.TRIANGLE_STRIP)
+        
+        return self.style_effect_texture
