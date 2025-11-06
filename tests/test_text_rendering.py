@@ -72,7 +72,13 @@ def test_text_rendering():
     print(f"Screenshot saved to {savepath}")
     
     print("Text rendering test completed successfully!")
-    print(f"Textures cached: {len(renderer.text_texture_cache)}")
+    
+    # Get cache statistics
+    cache_stats = renderer.get_text_cache_stats()
+    print(f"Cache statistics:")
+    print(f"  Surface cache: {cache_stats['surface_cache_size']} items")
+    print(f"  Texture cache: {cache_stats['texture_cache_size']} items")
+    print(f"  Total accesses: {cache_stats['total_accesses']}")
     
     pygame.quit()
 
