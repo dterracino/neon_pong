@@ -149,6 +149,14 @@ class Renderer:
             self.background_program = shader_manager.load_shader(
                 'background_waves', 'basic.vert', 'background_waves.frag'
             )
+        elif BACKGROUND_TYPE == "retrowave":
+            self.background_program = shader_manager.load_shader(
+                'background_retrowave', 'basic.vert', 'background_retrowave.frag'
+            )
+        elif BACKGROUND_TYPE == "retro":
+            self.background_program = shader_manager.load_shader(
+                'background_retro', 'basic.vert', 'background_retro.frag'
+            )
         
         if self.background_program:
             self.background_vao = ctx.simple_vertex_array(
@@ -182,8 +190,9 @@ class Renderer:
         logger.debug("Renderer initialization complete")
 
     def update_time(self, dt: float):
-        """Update time for animated backgrounds"""
+        """Update time for animated backgrounds and post-processing effects"""
         self.time += dt
+        self.post_processor.update_time(dt)
     
     def _manage_text_cache(self):
         """Manage text cache size by removing least frequently used items"""
@@ -256,13 +265,16 @@ class Renderer:
         self._flush_text_batch()
 
         # Apply bloom post-processing to scene
-        final_texture = self.post_processor.apply_bloom(self.scene_texture)
+        bloomed_texture = self.post_processor.apply_bloom(self.scene_texture)
+        
+        # Apply style effect (scanlines, CRT, VHS, or none) to bloomed result
+        final_texture = self.post_processor.apply_style_effect(bloomed_texture)
 
         # Render to screen
         self.ctx.screen.use()
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
 
-        # Draw bloomed scene to screen
+        # Draw final processed scene to screen
         final_texture.use(0)
         self.basic_program['tex'] = 0
         self.basic_program['color'] = (1.0, 1.0, 1.0, 1.0)

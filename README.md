@@ -7,12 +7,15 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🎮 Classic Pong gameplay with modern graphics
 - ✨ Bloom post-processing effects using ModernGL
 - 🌌 **Shader-drawn animated backgrounds** (starfield, plasma, waves)
+- 🎨 **Retro style effects** (scanlines, CRT, VHS) - NEW!
 - 🌈 Neon-vaporwave color scheme
 - 🎵 Sound effects and background music support
 - 🎯 Single-player vs AI or two-player local multiplayer
 - 🤖 AI opponent with ball-tracking behavior
 - 💫 Particle effects and screen shake
 - 🚀 **Performance-optimized text rendering with intelligent caching**
+- 📸 **Screenshot capture** with Ctrl-S
+- 🎬 **Comprehensive tweening library** with 31 easing functions for smooth animations
 - 🔍 Comprehensive debug logging for troubleshooting
 
 ## Architecture
@@ -53,6 +56,8 @@ You can also run `python tests/test_debug_output.py` to see what normal debug ou
 - **Player 1**: W (up) / S (down)
 - **Player 2**: Up Arrow / Down Arrow (in 2 Player mode)
 - **Pause**: ESC or P
+- **Screenshot**: Ctrl-S (saves to `screenshots/` directory)
+- **FPS Display**: F3 (toggle performance metrics)
 
 ## Project Structure
 
@@ -78,7 +83,10 @@ pong-moderngl/
     ├── background_*.frag        # Animated background shaders
     ├── bloom_extract.frag       # Bloom extraction
     ├── bloom_blur.frag          # Gaussian blur
-    └── bloom_combine.frag       # Bloom combining
+    ├── bloom_combine.frag       # Bloom combining
+    ├── scanlines.frag           # Scanlines effect
+    ├── crt.frag                 # CRT monitor effect
+    └── vhs.frag                 # VHS tape effect
 ```
 
 ## Technical Details
@@ -89,8 +97,9 @@ pong-moderngl/
 2. **Scene Rendering**: Game objects rendered to framebuffer
 3. **Bloom Extraction**: Extract bright pixels above threshold
 4. **Gaussian Blur**: Multi-pass blur for glow effect
-5. **Combine**: Merge original scene with bloom
-6. **Display**: Final image to screen
+5. **Bloom Combine**: Merge original scene with bloom
+6. **Style Effect**: Optional retro effect (scanlines, CRT, VHS) - NEW!
+7. **Display**: Final image to screen
 
 ### Animated Backgrounds
 
@@ -100,7 +109,27 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 - **Waves**: Animated wave patterns with retro grid
 - **Solid**: Static background for maximum performance
 
+### Post-Processing Style Effects
+
+Apply retro visual effects in `src/utils/constants.py`:
+- **None**: Clean modern look (default)
+- **Scanlines**: Horizontal scanlines like old monitors
+- **CRT**: Full CRT simulation with curvature and phosphor glow
+- **VHS**: VHS tape artifacts with tracking errors and noise
+
+See [docs/POST_PROCESSING_EFFECTS.md](docs/POST_PROCESSING_EFFECTS.md) for detailed information.
+
 See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
+
+### Tweening/Animation System
+
+The game includes a comprehensive tweening library with 31 easing functions for smooth animations:
+- **11 Easing Categories**: Linear, Quad, Cubic, Quart, Quint, Sine, Expo, Circ, Elastic, Back, Bounce
+- **In/Out/InOut Variations**: Fine control over animation curves
+- **TweenManager**: Manage multiple concurrent animations
+- **Perfect for**: UI transitions, screen fades, smooth movement, particle effects
+
+See [docs/TWEENING.md](docs/TWEENING.md) for complete documentation and examples.
 
 ### Color Scheme
 

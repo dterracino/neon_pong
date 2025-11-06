@@ -136,3 +136,7 @@ cython_debug/
 
 # VS Code settings
 .vscode/
+
+# Screenshots
+screenshots/
+test_screenshots/

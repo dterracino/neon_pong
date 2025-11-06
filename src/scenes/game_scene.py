@@ -28,11 +28,13 @@ class GameScene(Scene):
     """Main game scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
-                 ai_enabled: bool = False, ai_difficulty: str = 'normal'):
+                 ai_enabled: bool = False, ai_difficulty: str = 'normal',
+                 screenshot_manager=None):
         logger.debug("Creating game scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
+        self.screenshot_manager = screenshot_manager
         self.ai_enabled = ai_enabled
         self.ai_difficulty = ai_difficulty
         
@@ -65,15 +67,19 @@ class GameScene(Scene):
         self.winner = 0
         
         # Try to start game music
-        # self.audio_manager.play_music('game_music.ogg')
+        self.audio_manager.play_music('game_music.ogg')
         logger.debug("Game scene created (paddle1: %.1f,%.1f, ball: %.1f,%.1f, ai_enabled: %s)", 
                     self.paddle1.x, self.paddle1.y, self.ball.x, self.ball.y, self.ai_enabled)
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_ESCAPE, pygame.K_p):
-                # Pause game
-                pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager)
+                # Take screenshot for pause background before pausing
+                if self.screenshot_manager:
+                    self.screenshot_manager.capture_to_memory(self.renderer.screen)
+                # Pause game - pass screenshot manager for blurred background
+                pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
+                                        self.screenshot_manager)
                 self.scene_manager.push_scene(pause_scene)
     
     def update(self, dt: float):
