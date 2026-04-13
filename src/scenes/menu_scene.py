@@ -24,12 +24,13 @@ class MenuScene(Scene):
     """Main menu scene"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager,
-                 screenshot_manager=None):
+                 screenshot_manager=None, achievement_manager=None):
         logger.debug("Creating menu scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         self.screenshot_manager = screenshot_manager
+        self.achievement_manager = achievement_manager
         
         self.selected_option = 0
         self.previous_selection = 0
@@ -127,27 +128,31 @@ class MenuScene(Scene):
             logger.debug("Creating game scene with AI opponent (Easy)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='easy',
-                                  screenshot_manager=self.screenshot_manager)
+                                  screenshot_manager=self.screenshot_manager,
+                                  achievement_manager=self.achievement_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 1:  # 1 Player (Normal)
             logger.debug("Creating game scene with AI opponent (Normal)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='normal',
-                                  screenshot_manager=self.screenshot_manager)
+                                  screenshot_manager=self.screenshot_manager,
+                                  achievement_manager=self.achievement_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 2:  # 1 Player (Hard)
             logger.debug("Creating game scene with AI opponent (Hard)")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=True, ai_difficulty='hard',
-                                  screenshot_manager=self.screenshot_manager)
+                                  screenshot_manager=self.screenshot_manager,
+                                  achievement_manager=self.achievement_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 3:  # 2 Player
             logger.debug("Creating game scene for 2 players")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
-                                  ai_enabled=False, screenshot_manager=self.screenshot_manager)
+                                  ai_enabled=False, screenshot_manager=self.screenshot_manager,
+                                  achievement_manager=self.achievement_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
         elif self.selected_option == 4:  # Quit

@@ -11,6 +11,9 @@ from src.rendering.renderer import Renderer
 from src.managers.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
 from src.scenes.help_scene import HelpScene
+from src.scenes.achievement_scene import AchievementScene
+from src.managers.achievement_manager import AchievementManager
+from src.rendering.achievement_toast import AchievementToast
 from src.utils.fps_counter import FPSCounter
 from src.utils.screenshot import ScreenshotManager
 from src.utils.constants import (
@@ -102,10 +105,21 @@ class Game:
         self.screenshot_manager = ScreenshotManager(ctx=self.ctx)
         logger.debug("Screenshot manager initialized")
         
+        # Initialize achievement system
+        logger.debug("Initializing achievement manager")
+        self.achievement_manager = AchievementManager()
+        self.achievement_toast = AchievementToast(WINDOW_WIDTH, WINDOW_HEIGHT)
+        # Register toast + sound on unlock
+        def _on_achievement_unlock(ach):
+            self.achievement_toast.push(ach)
+            self.audio_manager.play_sound('achievement')
+        self.achievement_manager.on_unlock(_on_achievement_unlock)
+        logger.debug("Achievement manager initialized")
+
         # Start with menu scene
         logger.debug("Creating initial menu scene")
         initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager,
-                                 self.screenshot_manager)
+                                 self.screenshot_manager, self.achievement_manager)
         logger.debug("Pushing menu scene to scene manager")
         self.scene_manager.push_scene(initial_scene)
         
@@ -191,7 +205,11 @@ class Game:
             # Render FPS display if enabled
             if self.fps_counter.is_visible():
                 self._render_fps_display()
-                
+
+            # Update and render achievement toast
+            self.achievement_toast.update(self.dt)
+            self.achievement_toast.render(self.renderer)
+
             # Swap buffers
             pygame.display.flip()
             
@@ -227,7 +245,17 @@ class Game:
                 logger.debug("QUIT event received")
                 self.running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_F1:
+                if event.key == pygame.K_F2:
+                    # Show achievement screen — prevent stacking
+                    if not isinstance(self.scene_manager.current_scene, AchievementScene):
+                        ach_scene = AchievementScene(
+                            self.scene_manager, self.renderer,
+                            self.audio_manager, self.achievement_manager,
+                            self.screenshot_manager
+                        )
+                        self.scene_manager.push_scene(ach_scene)
+                        logger.debug("Achievement screen opened")
+                elif event.key == pygame.K_F1:
                     # Show help / key-bindings screen — prevent stacking
                     if not isinstance(self.scene_manager.current_scene, HelpScene):
                         help_scene = HelpScene(

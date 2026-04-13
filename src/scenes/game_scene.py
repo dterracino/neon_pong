@@ -4,6 +4,7 @@ Main gameplay scene
 import logging
 import pygame
 import random
+import time
 from typing import Optional
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
@@ -17,6 +18,7 @@ from src.ai.pong_ai import PongAI
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
+    BALL_MAX_SPEED,
     COLOR_CYAN, COLOR_PINK, COLOR_YELLOW, COLOR_PURPLE, COLOR_MINT,
     FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 )
@@ -29,12 +31,13 @@ class GameScene(Scene):
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
                  ai_enabled: bool = False, ai_difficulty: str = 'normal',
-                 screenshot_manager=None):
+                 screenshot_manager=None, achievement_manager=None):
         logger.debug("Creating game scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         self.screenshot_manager = screenshot_manager
+        self.achievement_manager = achievement_manager
         self.ai_enabled = ai_enabled
         self.ai_difficulty = ai_difficulty
         
@@ -65,6 +68,15 @@ class GameScene(Scene):
         # Game state
         self.game_over = False
         self.winner = 0
+
+        # Achievement tracking
+        self._game_start_time: float = time.monotonic()
+        self._consecutive_hits: int = 0
+        self._consecutive_scored_by: int = 0  # which player scored last — local state only
+
+        # Reset streak counters at the start of every game
+        if self.achievement_manager:
+            self.achievement_manager.reset_streaks()
         
         # Try to start game music
         self.audio_manager.play_music('game_music.ogg')
@@ -77,7 +89,7 @@ class GameScene(Scene):
                 # Pause game - pass screenshot manager for blurred background
                 self.audio_manager.play_sound('pause')
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
-                                        self.screenshot_manager)
+                                        self.screenshot_manager, self.achievement_manager)
                 self.scene_manager.push_scene(pause_scene)
     
     def update(self, dt: float):
@@ -136,6 +148,7 @@ class GameScene(Scene):
                 PARTICLE_COUNT,
                 PARTICLE_LIFETIME
             )
+            self._on_paddle_hit()
         
         if self.ball.bounds.intersects(self.paddle2.bounds):
             self.ball.bounce_paddle(self.paddle2)
@@ -148,6 +161,7 @@ class GameScene(Scene):
                 PARTICLE_COUNT,
                 PARTICLE_LIFETIME
             )
+            self._on_paddle_hit()
         
         # Check scoring
         scorer = self.ball.is_out_of_bounds()
@@ -156,7 +170,10 @@ class GameScene(Scene):
                 self.score1 += 1
             else:
                 self.score2 += 1
-            
+
+            # Achievement: first point ever scored
+            self._check_score_achievements(scorer)
+
             # Play contextual score sound based on game mode
             if self.ai_enabled:
                 # 1P mode: Score sound for player scoring, miss sound for AI scoring
@@ -170,6 +187,11 @@ class GameScene(Scene):
             
             self.ball.reset()
             self.particles.clear()
+
+            # Reset consecutive rally counter on any point scored
+            self._consecutive_hits = 0
+            if self.achievement_manager:
+                self.achievement_manager.reset_stat('consecutive_hits')
             
             # Reset AI state when ball resets
             if self.ai:
@@ -184,6 +206,7 @@ class GameScene(Scene):
                 self.game_over = True
                 self.winner = 1
                 self.audio_manager.play_sound('win')  # Player won the game!
+                self._check_win_achievements(winner=1)
             elif self.score2 >= WINNING_SCORE:
                 self.game_over = True
                 self.winner = 2
@@ -192,6 +215,7 @@ class GameScene(Scene):
                     self.audio_manager.play_sound('lose')  # AI won :(
                 else:
                     self.audio_manager.play_sound('win')  # Player 2 won!
+                self._check_win_achievements(winner=2)
         
         # Update particles
         self.particles.update(dt)
@@ -208,7 +232,71 @@ class GameScene(Scene):
         
         # Launch the firework
         self.fireworks.emit_firework(x, y, color, count=random.randint(40, 60), speed=random.uniform(150, 250))
-    
+
+    # ------------------------------------------------------------------ #
+    # Achievement helper methods                                          #
+    # ------------------------------------------------------------------ #
+
+    def _on_paddle_hit(self):
+        """Called whenever a paddle-ball collision occurs."""
+        if not self.achievement_manager:
+            return
+        self._consecutive_hits += 1
+        self.achievement_manager.increment('consecutive_hits')
+
+        # speed_demon: report current ball speed; manager checks THRESHOLD achievements
+        self.achievement_manager.observe('ball_speed', self.ball.speed)
+
+    def _check_score_achievements(self, scorer: int):
+        """Called immediately after a point is scored."""
+        if not self.achievement_manager:
+            return
+
+        am = self.achievement_manager
+
+        # Fire point_scored event — manager resolves all MILESTONE achievements
+        am.trigger('point_scored', {'scorer': scorer})
+
+        # Lifetime totals
+        am.increment('total_points')
+
+        # Hat Trick: STREAK achievement — increment when same player scores again, reset on change
+        if scorer == self._consecutive_scored_by:
+            am.increment('consecutive_scored')
+        else:
+            self._consecutive_scored_by = scorer
+            am.reset_stat('consecutive_scored')
+            am.increment('consecutive_scored')  # this point starts the new streak
+
+    def _check_win_achievements(self, winner: int):
+        """Called when the game ends.  winner is 1 or 2."""
+        if not self.achievement_manager:
+            return
+
+        am = self.achievement_manager
+        elapsed = time.monotonic() - self._game_start_time
+        opponent_score = self.score2 if winner == 1 else self.score1
+
+        # Fire game_won event — manager resolves all MILESTONE achievements
+        am.trigger('game_won', {
+            'winner':         winner,
+            'opponent_score': opponent_score,
+            'ai_enabled':     self.ai_enabled,
+            'ai_difficulty':  self.ai_difficulty,
+            'elapsed':        elapsed,
+        })
+
+        # Increment lifetime accumulators (ACCUMULATOR type, not MILESTONE)
+        am.increment('wins')
+        am.increment('total_games')
+
+        # SESSION_STREAK: track consecutive AI wins within this session
+        if self.ai_enabled:
+            if winner == 2:
+                am.increment('consecutive_ai_wins')
+            else:
+                am.reset_stat('consecutive_ai_wins')
+
     def render(self):
         self.renderer.begin_frame()
 

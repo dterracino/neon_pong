@@ -19,11 +19,13 @@ class PauseScene(Scene):
     """Pause menu overlay"""
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
-                 screenshot_manager: Optional[ScreenshotManager] = None):
+                 screenshot_manager: Optional[ScreenshotManager] = None,
+                 achievement_manager=None):
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         self.screenshot_manager = screenshot_manager
+        self.achievement_manager = achievement_manager
         self.selected_option = 0
         self.options = ["Resume", "Quit to Menu"]
         
@@ -147,7 +149,7 @@ class PauseScene(Scene):
                     self.scene_manager.pop_scene()  # Pop pause
                     # Now game scene is active, change it to menu
                     menu_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager,
-                                          self.screenshot_manager)
+                                          self.screenshot_manager, self.achievement_manager)
                     self.scene_manager.change_scene(menu_scene)
     
     def update(self, dt: float):

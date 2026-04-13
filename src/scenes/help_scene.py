@@ -32,6 +32,7 @@ HELP_SECTIONS = [
     ]),
     (COLOR_MINT, "DISPLAY", [
         ("F1",              "Help screen (this screen)"),
+        ("F2",              "Achievement browser"),
         ("F3",              "Toggle FPS counter"),
         ("=",               "Toggle scanlines"),
         ("Ctrl + S",        "Save screenshot"),

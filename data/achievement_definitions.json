@@ -1,0 +1,98 @@
+[
+  {
+    "id": "first_blood",
+    "name": "First Blood",
+    "description": "Score your very first point.",
+    "type": "MILESTONE",
+    "trigger": "point_scored"
+  },
+  {
+    "id": "winner",
+    "name": "Winner",
+    "description": "Win a game.",
+    "type": "MILESTONE",
+    "trigger": "game_won"
+  },
+  {
+    "id": "shutout",
+    "name": "Shutout",
+    "description": "Win a game without letting your opponent score.",
+    "type": "MILESTONE",
+    "trigger": "game_won",
+    "conditions": { "opponent_score": 0 }
+  },
+  {
+    "id": "hard_mode",
+    "name": "Iron Will",
+    "description": "Defeat the AI on Hard difficulty.",
+    "type": "MILESTONE",
+    "trigger": "game_won",
+    "conditions": { "winner": 1, "ai_enabled": true, "ai_difficulty": "hard" }
+  },
+  {
+    "id": "speed_run",
+    "name": "Speed Run",
+    "description": "Win a game in under 90 seconds.",
+    "type": "MILESTONE",
+    "trigger": "game_won",
+    "conditions": { "elapsed__lt": 90 }
+  },
+  {
+    "id": "hat_trick",
+    "name": "Hat Trick",
+    "description": "Score 3 consecutive points.",
+    "type": "STREAK",
+    "target": 3,
+    "stat_key": "consecutive_scored",
+    "hidden": true
+  },
+  {
+    "id": "century",
+    "name": "Century",
+    "description": "Score 100 total points across all games.",
+    "type": "ACCUMULATOR",
+    "target": 100,
+    "stat_key": "total_points"
+  },
+  {
+    "id": "marathoner",
+    "name": "Marathoner",
+    "description": "Play 50 games.",
+    "type": "ACCUMULATOR",
+    "target": 50,
+    "stat_key": "total_games"
+  },
+  {
+    "id": "veteran",
+    "name": "Veteran",
+    "description": "Win 10 games.",
+    "type": "ACCUMULATOR",
+    "target": 10,
+    "stat_key": "wins"
+  },
+  {
+    "id": "rally_master",
+    "name": "Rally Master",
+    "description": "Achieve a 10-hit rally without scoring.",
+    "type": "STREAK",
+    "target": 10,
+    "stat_key": "consecutive_hits"
+  },
+  {
+    "id": "speed_demon",
+    "name": "Speed Demon",
+    "description": "Push the ball to its maximum speed.",
+    "type": "THRESHOLD",
+    "stat_key": "ball_speed",
+    "target": 800
+  },
+  {
+    "id": "hat_trickless",
+    "name": "Hat Trickless",
+    "description": "Lose 3 games in a row to the AI.",
+    "type": "SESSION_STREAK",
+    "target": 3,
+    "stat_key": "consecutive_ai_wins",
+    "hidden": true
+  }
+]
