@@ -110,10 +110,12 @@ class PauseScene(Scene):
             logger.error("Failed to create blurred background: %s", e)
     
     def on_enter(self):
-        self.audio_manager.pause_music()
+        # Duck music to 50% volume instead of pausing
+        self.audio_manager.duck_music(0.5)
     
     def on_exit(self):
-        self.audio_manager.resume_music()
+        # Restore music to normal volume
+        self.audio_manager.unduck_music()
         # Clean up blur resources
         if self.blur_texture:
             self.blur_texture.release()
@@ -126,12 +128,16 @@ class PauseScene(Scene):
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_ESCAPE, pygame.K_p):
                 # Resume game
+                self.audio_manager.play_sound('pause')
                 self.scene_manager.pop_scene()
             elif event.key == pygame.K_UP:
+                self.audio_manager.play_sound('menu-move')
                 self.selected_option = (self.selected_option - 1) % len(self.options)
             elif event.key == pygame.K_DOWN:
+                self.audio_manager.play_sound('menu-move')
                 self.selected_option = (self.selected_option + 1) % len(self.options)
             elif event.key == pygame.K_RETURN:
+                self.audio_manager.play_sound('menu-select')
                 if self.selected_option == 0:  # Resume
                     self.scene_manager.pop_scene()
                 elif self.selected_option == 1:  # Quit to Menu

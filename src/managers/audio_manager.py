@@ -1,10 +1,13 @@
 """
 Audio manager for sound effects and music
 """
+import logging
 import pygame
 import random
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import MUSIC_VOLUME, SFX_VOLUME
+
+logger = logging.getLogger(__name__)
 
 
 class AudioManager:
@@ -29,6 +32,9 @@ class AudioManager:
             
             sound.set_volume(volume)
             sound.play()
+            logger.debug("play_sound: '%s' (volume=%.2f, pitch_variation=%s)", sound_name, volume, pitch_variation)
+        else:
+            logger.warning("play_sound: '%s' not found (not loaded or wrong name)", sound_name)
     
     def play_music(self, filename: str, loops: int = -1):
         """Play background music"""

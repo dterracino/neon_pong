@@ -61,12 +61,15 @@ class MenuScene(Scene):
             if event.key == pygame.K_UP:
                 self.previous_selection = self.selected_option
                 self.selected_option = (self.selected_option - 1) % len(self.options)
+                self.audio_manager.play_sound('menu-move')
                 self._on_selection_change()
             elif event.key == pygame.K_DOWN:
                 self.previous_selection = self.selected_option
                 self.selected_option = (self.selected_option + 1) % len(self.options)
+                self.audio_manager.play_sound('menu-move')
                 self._on_selection_change()
             elif event.key == pygame.K_RETURN:
+                self.audio_manager.play_sound('menu-select')
                 self._select_option()
     
     def _on_selection_change(self):

@@ -78,6 +78,7 @@ class GameScene(Scene):
                 if self.screenshot_manager:
                     self.screenshot_manager.capture_to_memory(self.renderer.screen)
                 # Pause game - pass screenshot manager for blurred background
+                self.audio_manager.play_sound('pause')
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
                                         self.screenshot_manager)
                 self.scene_manager.push_scene(pause_scene)
@@ -159,8 +160,16 @@ class GameScene(Scene):
             else:
                 self.score2 += 1
             
-            self.audio_manager.play_sound('score')
-            self.ball.reset()
+            # Play contextual score sound based on game mode
+            if self.ai_enabled:
+                # 1P mode: Score sound for player scoring, miss sound for AI scoring
+                if scorer == 1:
+                    self.audio_manager.play_sound('score')  # Player scored!
+                else:
+                    self.audio_manager.play_sound('ball-miss')  # AI scored :(
+            else:
+                # 2P mode: Always use score sound (someone scored)
+                self.audio_manager.play_sound('score')
             self.particles.clear()
             
             # Reset AI state when ball resets
@@ -175,11 +184,15 @@ class GameScene(Scene):
             if self.score1 >= WINNING_SCORE:
                 self.game_over = True
                 self.winner = 1
-                self.audio_manager.play_sound('win')
+                self.audio_manager.play_sound('win')  # Player won the game!
             elif self.score2 >= WINNING_SCORE:
                 self.game_over = True
                 self.winner = 2
-                self.audio_manager.play_sound('win')
+                # Play lose sound if AI won in 1P mode, win sound in 2P mode
+                if self.ai_enabled:
+                    self.audio_manager.play_sound('lose')  # AI won :(
+                else:
+                    self.audio_manager.play_sound('win')  # Player 2 won!
         
         # Update particles
         self.particles.update(dt)

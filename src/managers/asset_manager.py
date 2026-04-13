@@ -52,6 +52,46 @@ class AssetManager:
         os.makedirs(self.sounds_path, exist_ok=True)
         os.makedirs(self.music_path, exist_ok=True)
     
+    @staticmethod
+    def _normalize_asset_name(filename: str) -> str:
+        """Normalize asset name: lowercase, no extension, slug-style
+
+        Converts filename to a consistent key format:
+        - Remove extension
+        - Convert to lowercase
+        - Replace spaces and underscores with hyphens
+        - Remove consecutive hyphens
+        - Strip leading/trailing hyphens
+
+        Examples:
+            "Hit_Sound.WAV" -> "hit-sound"
+            "Retro Gaming.ttf" -> "retro-gaming"
+            "background-music.ogg" -> "background-music"
+            "Menu__Select!!!.wav" -> "menu-select"
+        """
+        import re
+        name = os.path.splitext(filename)[0].lower()
+        name = re.sub(r'[_\s]+', '-', name)
+        name = re.sub(r'[^\w\-]', '-', name)
+        name = re.sub(r'-+', '-', name)
+        return name.strip('-')
+
+    def load_font(self, filename: str, size: int) -> Optional[pygame.font.Font]:
+        """Explicitly load a font file at a specific size and cache it.
+
+        Args:
+            filename: Font filename (e.g., "Retro_Gaming.ttf")
+            size: Font size in points
+
+        Returns:
+            Loaded font, or None if the file was not found.
+        """
+        font_path = os.path.join(self.fonts_path, filename)
+        if not os.path.exists(font_path):
+            logger.warning("Font not found: %s", font_path)
+            return None
+        return self.get_font(filename, size)
+
     def get_font(self, name: Optional[str] = None, size: int = 32) -> pygame.font.Font:
         """Get a font, creating it if not cached"""
         key = (name, size)
@@ -85,8 +125,7 @@ class AssetManager:
             return None
         
         try:
-            # Get name without extension
-            name = os.path.splitext(filename)[0].lower()
+            name = self._normalize_asset_name(filename)
             sound = pygame.mixer.Sound(sound_path)
             self.sounds[name] = sound
             logger.debug("Loaded sound '%s' from %s", name, filename)
