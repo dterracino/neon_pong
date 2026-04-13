@@ -74,9 +74,6 @@ class GameScene(Scene):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_ESCAPE, pygame.K_p):
-                # Take screenshot for pause background before pausing
-                if self.screenshot_manager:
-                    self.screenshot_manager.capture_to_memory(self.renderer.screen)
                 # Pause game - pass screenshot manager for blurred background
                 self.audio_manager.play_sound('pause')
                 pause_scene = PauseScene(self.scene_manager, self.renderer, self.audio_manager, 
@@ -170,6 +167,8 @@ class GameScene(Scene):
             else:
                 # 2P mode: Always use score sound (someone scored)
                 self.audio_manager.play_sound('score')
+            
+            self.ball.reset()
             self.particles.clear()
             
             # Reset AI state when ball resets
@@ -212,7 +211,10 @@ class GameScene(Scene):
     
     def render(self):
         self.renderer.begin_frame()
-        
+
+        # Draw dust overlay (rendered into scene FBO, gets bloom)
+        self.renderer.draw_dust_overlay()
+
         # Draw center line
         line_segments = 20
         segment_height = WINDOW_HEIGHT / (line_segments * 2)

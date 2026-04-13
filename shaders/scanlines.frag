@@ -5,6 +5,7 @@
 uniform sampler2D tex;
 uniform float time;
 uniform vec2 resolution;
+uniform float scanlineThickness;  // Pixels per scanline pair
 
 in vec2 uv;
 out vec4 fragColor;
@@ -12,23 +13,24 @@ out vec4 fragColor;
 void main() {
     // Sample the input texture
     vec3 color = texture(tex, uv).rgb;
-    
-    // Calculate scanline intensity
-    // Using screen coordinates to create consistent line width
-    float scanline = sin(uv.y * resolution.y * 3.14159);
+
+    // One full sine cycle per (scanlineThickness) pixels
+    // Higher thickness = lower frequency = fatter bands
+    float freq = resolution.y / scanlineThickness;
+    float scanline = sin(uv.y * freq * 3.14159);
     scanline = scanline * 0.5 + 0.5;
-    
-    // Make scanlines more pronounced
-    scanline = pow(scanline, 1.5);
-    
-    // Mix between 0.7 and 1.0 to avoid completely dark lines
-    scanline = mix(0.7, 1.0, scanline);
-    
+
+    // Higher power = wider dark troughs relative to bright peaks
+    scanline = pow(scanline, 3.0);
+
+    // Mix between 0.55 (dark trough) and 1.0 (bright peak)
+    scanline = mix(0.55, 1.0, scanline);
+
     // Apply scanlines to color
     color *= scanline;
-    
+
     // Slight brightness boost to compensate for darkening
-    color *= 1.1;
-    
+    color *= 1.15;
+
     fragColor = vec4(color, 1.0);
 }

@@ -2,16 +2,19 @@
 Main menu scene
 """
 import logging
+import math
+import random
 import pygame
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
 from src.managers.audio_manager import AudioManager
 from src.scenes.game_scene import GameScene
-from src.entities.enhanced_particles import EnhancedParticleSystem, MotionPattern
+from src.entities.enhanced_particles import EnhancedParticleSystem, EnhancedParticle, MotionPattern
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT,
     COLOR_PINK, COLOR_CYAN, COLOR_YELLOW,
-    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL,
+    MENU_COMET_COUNT
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +57,23 @@ class MenuScene(Scene):
         
         # Try to start menu music
         self.audio_manager.play_music('menu_music.ogg')
+
+        # Title comets — each is a dict with position, velocity, colour state, spark timer
+        _comet_colors = [COLOR_CYAN, COLOR_PINK, COLOR_YELLOW]
+        _comet_speed = 400.0
+        self._comets = []
+        for _ in range(MENU_COMET_COUNT):
+            _angle = random.uniform(0, 2 * math.pi)
+            self._comets.append({
+                'x':          random.uniform(80, WINDOW_WIDTH - 80),
+                'y':          random.uniform(80, WINDOW_HEIGHT - 80),
+                'vx':         math.cos(_angle) * _comet_speed,
+                'vy':         math.sin(_angle) * _comet_speed,
+                'colors':     list(_comet_colors),
+                'color_idx':  0,
+                'spark_timer': 0.0,
+            })
+
         logger.debug("Menu scene created with particle effects")
     
     def handle_event(self, event):
@@ -137,12 +157,73 @@ class MenuScene(Scene):
     def update(self, dt: float):
         # Update particle system
         self.menu_particles.update(dt)
-        
+
         # Update glow emitter position to follow selected option
         option_y_base = 350
         selected_y = option_y_base + self.selected_option * 80
         self.glow_emitter.x = WINDOW_WIDTH // 2
         self.glow_emitter.y = selected_y
+
+        # --- Comet update ---
+        MARGIN = 20
+        for c in self._comets:
+            c['x'] += c['vx'] * dt
+            c['y'] += c['vy'] * dt
+
+            # Bounce off edges, cycle colour on each bounce
+            bounced = False
+            if c['x'] < MARGIN:
+                c['x'] = MARGIN
+                c['vx'] = abs(c['vx'])
+                bounced = True
+            elif c['x'] > WINDOW_WIDTH - MARGIN:
+                c['x'] = WINDOW_WIDTH - MARGIN
+                c['vx'] = -abs(c['vx'])
+                bounced = True
+            if c['y'] < MARGIN:
+                c['y'] = MARGIN
+                c['vy'] = abs(c['vy'])
+                bounced = True
+            elif c['y'] > WINDOW_HEIGHT - MARGIN:
+                c['y'] = WINDOW_HEIGHT - MARGIN
+                c['vy'] = -abs(c['vy'])
+                bounced = True
+            if bounced:
+                c['color_idx'] = (c['color_idx'] + 1) % len(c['colors'])
+
+            comet_color = c['colors'][c['color_idx']]
+
+            # Trail particles — stream backward along travel direction
+            trail_angle = math.atan2(c['vy'], c['vx']) + math.pi
+            for _ in range(3):
+                a = trail_angle + random.uniform(-0.45, 0.45)
+                s = random.uniform(40, 120)
+                self.menu_particles.particles.append(EnhancedParticle(
+                    c['x'] + random.uniform(-4, 4),
+                    c['y'] + random.uniform(-4, 4),
+                    comet_color,
+                    random.uniform(0.12, 0.35),
+                    math.cos(a) * s, math.sin(a) * s,
+                    random.uniform(2.0, 5.0),
+                    MotionPattern.DIRECTIONAL,
+                ))
+
+            # Periodic random sparks emitted in all directions
+            c['spark_timer'] += dt
+            if c['spark_timer'] >= 0.06:
+                c['spark_timer'] = 0.0
+                spark_color = random.choice(c['colors'])
+                for _ in range(5):
+                    a = random.uniform(0, 2 * math.pi)
+                    s = random.uniform(80, 260)
+                    self.menu_particles.particles.append(EnhancedParticle(
+                        c['x'], c['y'],
+                        spark_color,
+                        random.uniform(0.08, 0.22),
+                        math.cos(a) * s, math.sin(a) * s,
+                        random.uniform(1.5, 3.5),
+                        MotionPattern.DIRECTIONAL,
+                    ))
     
     def render(self):
         self.renderer.begin_frame()
@@ -161,23 +242,24 @@ class MenuScene(Scene):
         
         # Draw title
         title_y = 150
-        self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
+        self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, FONT_SIZE_LARGE, COLOR_PINK,
+                                font_name="ARCADECLASSIC.TTF", centered=True)
         
         # Draw menu options
         option_y = 350
         for i, option in enumerate(self.options):
             color = COLOR_YELLOW if i == self.selected_option else COLOR_CYAN
-            y = option_y + i * 80
+            y = option_y + i * 70
             self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, FONT_SIZE_MEDIUM, color, centered=True)
         
         # Draw controls
         controls_y = 550
-        self.renderer.draw_text("Player 1: W/S", 100, controls_y, FONT_SIZE_SMALL, COLOR_CYAN)
+        self.renderer.draw_text("Player 1: W/S", 100, controls_y, FONT_SIZE_SMALL, COLOR_CYAN, font_name="sys:arial")
         
         # Show different text based on selected option
         if self.selected_option in [0, 1, 2]:  # 1 Player modes
-            self.renderer.draw_text("Player 2: AI", WINDOW_WIDTH - 250, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
+            self.renderer.draw_text("Player 2: AI", WINDOW_WIDTH - 250, controls_y, FONT_SIZE_SMALL, COLOR_PINK, font_name="sys:arial")
         else:  # 2 Player mode or Quit
-            self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK)
+            self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK, font_name="sys:arial")
         
         self.renderer.end_frame()

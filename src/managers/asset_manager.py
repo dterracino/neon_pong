@@ -93,28 +93,45 @@ class AssetManager:
         return self.get_font(filename, size)
 
     def get_font(self, name: Optional[str] = None, size: int = 32) -> pygame.font.Font:
-        """Get a font, creating it if not cached"""
-        key = (name, size)
-        
+        """Get a font, creating it if not cached.
+
+        Supports three sources:
+          - None / omitted        → DEFAULT_FONT from constants
+          - "sys:arial"           → pygame system font (prefix with "sys:")
+          - "MyFont.ttf"          → file in assets/fonts/
+        """
+        from src.utils.constants import DEFAULT_FONT
+        resolved_name = name or DEFAULT_FONT
+        key = (resolved_name, size)
+
         if key not in self.fonts:
             try:
-                if name and os.path.exists(os.path.join(self.fonts_path, name)):
-                    font_path = os.path.join(self.fonts_path, name)
-                    self.fonts[key] = pygame.font.Font(font_path, size)
-                    logger.debug("Loaded font '%s' at size %d", name, size)
+                if resolved_name.startswith("sys:"):
+                    sys_name = resolved_name[4:]
+                    font = pygame.font.SysFont(sys_name, size)
+                    if font is None:
+                        logger.warning("System font '%s' not found, falling back to pygame default", sys_name)
+                        font = pygame.font.Font(None, size)
+                    else:
+                        logger.debug("Loaded system font '%s' at size %d", sys_name, size)
+                    self.fonts[key] = font
                 else:
-                    # Use default font
-                    self.fonts[key] = pygame.font.Font(None, size)
-                    logger.debug("Using default pygame font at size %d", size)
+                    font_path = os.path.join(self.fonts_path, resolved_name)
+                    if os.path.exists(font_path):
+                        self.fonts[key] = pygame.font.Font(font_path, size)
+                        logger.debug("Loaded font '%s' at size %d", resolved_name, size)
+                    else:
+                        logger.warning("Font '%s' not found, falling back to pygame default", resolved_name)
+                        self.fonts[key] = pygame.font.Font(None, size)
             except Exception as e:
-                logger.error("Error loading font %s: %s", name, e)
+                logger.error("Error loading font %s: %s", resolved_name, e)
                 self.fonts[key] = pygame.font.Font(None, size)
-        
+
         return self.fonts[key]
     
     def get_sound(self, name: str) -> Optional[pygame.mixer.Sound]:
         """Get a sound by name (without extension)"""
-        return self.sounds.get(name.lower())
+        return self.sounds.get(self._normalize_asset_name(name))
     
     def load_sound(self, filename: str) -> Optional[pygame.mixer.Sound]:
         """Load a single sound effect by filename"""

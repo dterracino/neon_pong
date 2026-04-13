@@ -4,7 +4,7 @@ Post-processing effects using ModernGL
 import logging
 import moderngl
 from src.managers.shader_manager import ShaderManager
-from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES, POST_EFFECT_TYPE
+from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES, POST_EFFECT_TYPE, SCANLINE_THICKNESS
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -103,6 +103,22 @@ class PostProcessor:
         else:
             self.style_effect_enabled = False
             logger.debug("No style effect enabled")
+
+        # Scanlines — always loaded so it can be toggled at runtime with = key
+        self.scanlines_enabled = False
+        self.scanlines_program = shader_manager.load_shader(
+            'scanlines', 'basic.vert', 'scanlines.frag'
+        )
+        if self.scanlines_program:
+            self.scanlines_vao = ctx.simple_vertex_array(
+                self.scanlines_program, self.quad_vbo, 'in_position'
+            )
+            self.scanlines_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
+            self.scanlines_fbo = ctx.framebuffer(color_attachments=[self.scanlines_texture])
+            logger.debug("Scanlines shader loaded (toggle with = key)")
+        else:
+            self.scanlines_vao = None
+            logger.warning("Scanlines shader failed to load")
         
         # Time tracking for animated effects
         self.time = 0.0
@@ -185,7 +201,7 @@ class PostProcessor:
             The texture with the style effect applied, or the original if no effect is enabled
         """
         if not self.style_effect_enabled or not self.style_effect_program:
-            return source_texture
+            return self._apply_scanlines(source_texture)
         
         # Render style effect to output framebuffer
         self.style_effect_fbo.use()
@@ -200,5 +216,33 @@ class PostProcessor:
             self.style_effect_program['resolution'].value = (WINDOW_WIDTH, WINDOW_HEIGHT)  # type: ignore[union-attr]
         
         self.style_effect_vao.render(moderngl.TRIANGLE_STRIP)
-        
-        return self.style_effect_texture
+
+        return self._apply_scanlines(self.style_effect_texture)
+
+    def _apply_scanlines(self, source_texture: moderngl.Texture) -> moderngl.Texture:
+        """Apply scanlines on top of source_texture if enabled"""
+        if not self.scanlines_enabled or not self.scanlines_program or not self.scanlines_vao:
+            return source_texture
+
+        self.scanlines_fbo.use()
+        self.ctx.clear(0.0, 0.0, 0.0, 1.0)
+        source_texture.use(0)
+        if 'tex' in self.scanlines_program:
+            self.scanlines_program['tex'].value = 0
+        if 'time' in self.scanlines_program:
+            self.scanlines_program['time'].value = self.time
+        if 'resolution' in self.scanlines_program:
+            self.scanlines_program['resolution'].value = (WINDOW_WIDTH, WINDOW_HEIGHT)
+        if 'scanlineThickness' in self.scanlines_program:
+            self.scanlines_program['scanlineThickness'].value = float(SCANLINE_THICKNESS)
+        self.scanlines_vao.render(moderngl.TRIANGLE_STRIP)
+        return self.scanlines_texture
+
+    def toggle_scanlines(self) -> bool:
+        """Toggle scanlines on/off. Returns new state."""
+        if not self.scanlines_program:
+            logger.warning("Scanlines shader not loaded, cannot toggle")
+            return False
+        self.scanlines_enabled = not self.scanlines_enabled
+        logger.debug("Scanlines %s", "enabled" if self.scanlines_enabled else "disabled")
+        return self.scanlines_enabled

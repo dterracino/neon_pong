@@ -10,6 +10,7 @@ from src.managers.shader_manager import ShaderManager
 from src.rendering.renderer import Renderer
 from src.managers.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
+from src.scenes.help_scene import HelpScene
 from src.utils.fps_counter import FPSCounter
 from src.utils.screenshot import ScreenshotManager
 from src.utils.constants import (
@@ -206,6 +207,8 @@ class Game:
                     logger.error("Failed to capture screenshot: %s", e)
                 self.pending_screenshot = False
             
+            # Always capture to memory for pause screen (non-blocking, minimal overhead)
+            self.screenshot_manager.capture_to_memory(self.screen)
             
             if frame_count < 5:
                 logger.debug("Frame %d complete", frame_count)
@@ -224,7 +227,16 @@ class Game:
                 logger.debug("QUIT event received")
                 self.running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_F3:
+                if event.key == pygame.K_F1:
+                    # Show help / key-bindings screen — prevent stacking
+                    if not isinstance(self.scene_manager.current_scene, HelpScene):
+                        help_scene = HelpScene(
+                            self.scene_manager, self.renderer,
+                            self.audio_manager, self.screenshot_manager
+                        )
+                        self.scene_manager.push_scene(help_scene)
+                        logger.debug("Help screen opened")
+                elif event.key == pygame.K_F3:
                     # Toggle FPS display
                     self.fps_counter.toggle_visibility()
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
@@ -233,6 +245,27 @@ class Game:
                     # Schedule screenshot capture after frame completes
                     self.pending_screenshot = True
                     logger.debug("Screenshot scheduled for capture after frame completion")
+                elif event.key == pygame.K_m:
+                    # Toggle music on/off
+                    self.audio_manager.toggle_music()
+                elif event.key == pygame.K_n:
+                    # Toggle sound effects on/off
+                    self.audio_manager.toggle_sfx()
+                elif event.key == pygame.K_LEFTBRACKET:
+                    # Decrease music volume
+                    self.audio_manager.adjust_music_volume(-0.1)
+                elif event.key == pygame.K_RIGHTBRACKET:
+                    # Increase music volume
+                    self.audio_manager.adjust_music_volume(0.1)
+                elif event.key == pygame.K_SEMICOLON:
+                    # Decrease SFX volume
+                    self.audio_manager.adjust_sfx_volume(-0.1)
+                elif event.key == pygame.K_QUOTE:
+                    # Increase SFX volume
+                    self.audio_manager.adjust_sfx_volume(0.1)
+                elif event.key == pygame.K_EQUALS:
+                    # Toggle scanlines post-processing effect
+                    self.renderer.toggle_scanlines()
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:
@@ -240,7 +273,7 @@ class Game:
     
     def _render_fps_display(self):
         """Render the FPS display overlay directly to screen"""
-        instant, average, one_percent, point_one_percent = self.fps_counter.get_metrics()
+        instant, average, one_percent, point_one_percent, frame_ms = self.fps_counter.get_metrics()
         
         x = FPS_DISPLAY_POSITION_X
         y = FPS_DISPLAY_POSITION_Y
@@ -254,7 +287,7 @@ class Game:
         # Render each metric if enabled in configuration
         lines = []
         if FPS_DISPLAY_SHOW_INSTANT:
-            lines.append(f"FPS: {instant:.1f}")
+            lines.append(f"FPS: {instant:.1f}  ({frame_ms:.2f} ms)")
         if FPS_DISPLAY_SHOW_AVERAGE:
             lines.append(f"Avg: {average:.1f}")
         if FPS_DISPLAY_SHOW_1_PERCENT:
@@ -265,8 +298,9 @@ class Game:
         # Render all lines
         for i, line in enumerate(lines):
             self.renderer.draw_text_direct(
-                line, x, y + i * line_height, 
-                FONT_SIZE_SMALL, COLOR_YELLOW
+                line, x, y + i * line_height,
+                FONT_SIZE_SMALL, COLOR_YELLOW,
+                font_name="sys:arial"
             )
         
         self.ctx.disable(moderngl.BLEND)

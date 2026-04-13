@@ -193,7 +193,11 @@ class Renderer:
         """Update time for animated backgrounds and post-processing effects"""
         self.time += dt
         self.post_processor.update_time(dt)
-    
+
+    def toggle_scanlines(self) -> bool:
+        """Toggle scanlines post-processing on/off. Returns new state."""
+        return self.post_processor.toggle_scanlines()
+
     def _manage_text_cache(self):
         """Manage text cache size by removing least frequently used items"""
         if len(self.text_surface_cache) <= self.max_cache_size:
@@ -345,7 +349,22 @@ class Renderer:
         
         vao.release()
         vbo.release()
-    
+
+    def draw_rounded_rect(self, x: float, y: float, width: float, height: float,
+                          radius: float, color: Tuple[float, float, float, float]):
+        """Draw a filled rounded rectangle using rects + corner circles"""
+        r = min(radius, width / 2, height / 2)
+        # Centre body
+        self.draw_rect(x, y + r, width, height - 2 * r, color)
+        # Top and bottom strips (between corners)
+        self.draw_rect(x + r, y, width - 2 * r, r, color)
+        self.draw_rect(x + r, y + height - r, width - 2 * r, r, color)
+        # Four corner circles
+        self.draw_circle(x + r,         y + r,          r, color)
+        self.draw_circle(x + width - r, y + r,          r, color)
+        self.draw_circle(x + r,         y + height - r, r, color)
+        self.draw_circle(x + width - r, y + height - r, r, color)
+
     def render_particles(self, particle_system):
         """Render enhanced particle system to current framebuffer
         
@@ -393,7 +412,15 @@ class Renderer:
             x, y: Screen position
             size: Font size in pixels
             color: RGBA color (normalized 0-1)
-            font_name: Optional font file name
+            font_name: Font to use. Three forms are supported:
+                - None / omitted      → default font (ARCADECLASSIC.TTF)
+                - "MyFont.ttf"        → file in assets/fonts/
+                - "sys:fontname"      → system font via pygame.font.SysFont.
+                                        Use the normalised name from pygame.font.get_fonts()
+                                        (lowercase, no spaces/punctuation), e.g.
+                                        "sys:arial", "sys:gillsans", "sys:calibri".
+                                        Spaces and casing are accepted but normalised
+                                        by pygame, so "sys:Gill Sans" == "sys:gillsans".
             centered: Center text at x position
             effects: Optional TextEffects for stroke, shadow, gradient
             render_before_bloom: If True, renders to scene (with bloom). If False, renders to UI overlay (no bloom)
@@ -547,6 +574,19 @@ class Renderer:
         """
         Render text immediately to the current framebuffer without batching.
         Useful for rendering after end_frame() has been called.
+
+        Args:
+            text: Text to render
+            x, y: Screen position
+            size: Font size in pixels
+            color: RGBA color (normalized 0-1)
+            font_name: Font to use. Three forms are supported:
+                - None / omitted      → default font (ARCADECLASSIC.TTF)
+                - "MyFont.ttf"        → file in assets/fonts/
+                - "sys:fontname"      → system font via pygame.font.SysFont.
+                                        Use the normalised name from pygame.font.get_fonts()
+                                        (lowercase, no spaces/punctuation), e.g.
+                                        "sys:arial", "sys:gillsans", "sys:calibri".
         """
         # Render text to pygame surface
         pygame_color = (

@@ -47,11 +47,20 @@ PARTICLE_SPEED = 100
 MUSIC_VOLUME = 0.3
 SFX_VOLUME = 0.5
 
+# Font
+DEFAULT_FONT = "MonainnRegular.otf"  # Default font filename
+
 # Font sizes
-FONT_SIZE_LARGE = 72   # For titles and big messages
+FONT_SIZE_LARGE = 96   # For titles and big messages
 FONT_SIZE_MEDIUM = 48  # For menu options
 FONT_SIZE_DEFAULT = 32 # Default text size
 FONT_SIZE_SMALL = 24   # For small text like controls
+
+# Menu title screen
+MENU_COMET_COUNT = 3   # Number of bouncing comets on the title screen
+
+# Scanlines effect
+SCANLINE_THICKNESS = 3  # Pixels per scanline pair (higher = fatter lines)
 
 # AI Difficulty Settings
 AI_DIFFICULTIES = {

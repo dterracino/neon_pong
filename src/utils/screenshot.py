@@ -112,7 +112,6 @@ class ScreenshotManager:
             screenshot = self._capture_pygame(screen)
         
         self.last_screenshot = screenshot
-        logger.debug("Screenshot captured to memory using %s method", method.value)
         return screenshot
     
     def _capture_opengl(self, screen: pygame.Surface) -> pygame.Surface:

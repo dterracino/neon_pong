@@ -29,6 +29,9 @@ class FPSCounter:
         
         # Visibility toggle
         self.visible = False
+        
+        # Current frame time in ms
+        self.frame_ms = 0.0
     
     def update(self, dt: float):
         """
@@ -51,6 +54,7 @@ class FPSCounter:
         # Calculate instant FPS
         if dt > 0:
             self.instant_fps = 1.0 / dt
+            self.frame_ms = dt * 1000.0
         
         # Calculate average FPS
         if len(self.frame_times) > 0:
@@ -82,18 +86,19 @@ class FPSCounter:
         """Toggle FPS display visibility"""
         self.visible = not self.visible
     
-    def get_metrics(self) -> Tuple[float, float, float, float]:
+    def get_metrics(self) -> Tuple[float, float, float, float, float]:
         """
         Get current FPS metrics
         
         Returns:
-            Tuple of (instant_fps, average_fps, one_percent_low, point_one_percent_low)
+            Tuple of (instant_fps, average_fps, one_percent_low, point_one_percent_low, frame_ms)
         """
         return (
             self.instant_fps,
             self.average_fps,
             self.one_percent_low,
-            self.point_one_percent_low
+            self.point_one_percent_low,
+            self.frame_ms
         )
     
     def is_visible(self) -> bool:

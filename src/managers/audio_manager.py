@@ -83,3 +83,33 @@ class AudioManager:
     def set_sfx_volume(self, volume: float):
         """Set sound effects volume (0.0 to 1.0)"""
         self.sfx_volume = max(0.0, min(1.0, volume))
+
+    def toggle_music(self):
+        """Toggle music on/off"""
+        if self.music_volume > 0:
+            self._music_volume_before_mute = self.music_volume
+            self.set_music_volume(0.0)
+            logger.debug("Music muted")
+        else:
+            self.set_music_volume(getattr(self, '_music_volume_before_mute', MUSIC_VOLUME))
+            logger.debug("Music unmuted (volume=%.2f)", self.music_volume)
+
+    def toggle_sfx(self):
+        """Toggle sound effects on/off"""
+        if self.sfx_volume > 0:
+            self._sfx_volume_before_mute = self.sfx_volume
+            self.sfx_volume = 0.0
+            logger.debug("SFX muted")
+        else:
+            self.sfx_volume = getattr(self, '_sfx_volume_before_mute', SFX_VOLUME)
+            logger.debug("SFX unmuted (volume=%.2f)", self.sfx_volume)
+
+    def adjust_music_volume(self, delta: float):
+        """Increase or decrease music volume by delta (e.g. +0.1 or -0.1)"""
+        self.set_music_volume(self.music_volume + delta)
+        logger.debug("Music volume: %.2f", self.music_volume)
+
+    def adjust_sfx_volume(self, delta: float):
+        """Increase or decrease SFX volume by delta (e.g. +0.1 or -0.1)"""
+        self.set_sfx_volume(self.sfx_volume + delta)
+        logger.debug("SFX volume: %.2f", self.sfx_volume)
