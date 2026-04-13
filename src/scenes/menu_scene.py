@@ -5,7 +5,7 @@ import logging
 import pygame
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
-from src.audio.audio_manager import AudioManager
+from src.managers.audio_manager import AudioManager
 from src.scenes.game_scene import GameScene
 from src.entities.enhanced_particles import EnhancedParticleSystem, MotionPattern
 from src.utils.constants import (

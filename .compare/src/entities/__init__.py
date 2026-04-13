@@ -1,3 +1,0 @@
-"""
-Game entities package
-"""

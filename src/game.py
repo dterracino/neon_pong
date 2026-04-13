@@ -8,7 +8,7 @@ from src.managers.scene_manager import SceneManager
 from src.managers.asset_manager import AssetManager
 from src.managers.shader_manager import ShaderManager
 from src.rendering.renderer import Renderer
-from src.audio.audio_manager import AudioManager
+from src.managers.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
 from src.utils.fps_counter import FPSCounter
 from src.utils.screenshot import ScreenshotManager

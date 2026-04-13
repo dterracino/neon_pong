@@ -8,7 +8,7 @@ import numpy as np
 from typing import Optional
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
-from src.audio.audio_manager import AudioManager
+from src.managers.audio_manager import AudioManager
 from src.utils.screenshot import ScreenshotManager
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_YELLOW, FONT_SIZE_LARGE, FONT_SIZE_DEFAULT
 

@@ -7,7 +7,7 @@ import random
 from typing import Optional
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
-from src.audio.audio_manager import AudioManager
+from src.managers.audio_manager import AudioManager
 from src.entities.paddle import Paddle
 from src.entities.ball import Ball
 from src.entities.particle import ParticleSystem
