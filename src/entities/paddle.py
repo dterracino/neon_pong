@@ -26,6 +26,9 @@ class Paddle:
         
         # Hit flash effect
         self.hit_flash = 0.0
+
+        # Spin factor: how much paddle velocity influences ball trajectory on hit
+        self.spin_factor = 0.25
         
     @property
     def bounds(self) -> AABB:

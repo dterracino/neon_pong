@@ -18,7 +18,7 @@ This document provides a high-level summary of the comparison between files in t
 
 ### Critical Issues
 
-**⚠️ URGENT: Merge Conflicts Detected**
+⚠️ **URGENT: Merge Conflicts Detected**
 
 Three files in the `.compare` folder contain unresolved merge conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>>`). These files cannot be merged until the conflicts are manually resolved:
 
@@ -27,6 +27,7 @@ Three files in the `.compare` folder contain unresolved merge conflict markers (
 3. `src/scenes/pause_scene.py`
 
 The conflicts appear to involve:
+
 - Audio system integration (music/sound playback using different APIs)
 - Screenshot handling for pause menu backgrounds
 - Audio ducking vs. pausing behavior
@@ -38,17 +39,21 @@ The conflicts appear to involve:
 These files require immediate attention and manual conflict resolution:
 
 | File | Key Conflicts |
-|------|---------------|
-| `src/scenes/game_scene.py` | - Music playback API differences (`'background'` vs `'game_music.ogg'`)<br>- Screenshot capture for pause menu<br>- Contextual score sounds (1P vs 2P mode) |
-| `src/scenes/menu_scene.py` | - Music playback API (`'title'` vs `'menu_music.ogg'`)<br>- Menu navigation sound effects |
-| `src/scenes/pause_scene.py` | - Audio ducking vs. pausing behavior<br>- Menu navigation sound effects |
+| ------ | --------------- |
+| `src/scenes/game_scene.py` | - Music playback API differences (`'background'` vs `'game_music.ogg'`) |
+| | - Screenshot capture for pause menu |
+| | - Contextual score sounds (1P vs 2P mode) |
+| `src/scenes/menu_scene.py` | - Music playback API (`'title'` vs `'menu_music.ogg'`) |
+| | - Menu navigation sound effects |
+| `src/scenes/pause_scene.py` | - Audio ducking vs. pausing behavior |
+| | - Menu navigation sound effects |
 
 **Recommendation:** Manually review each conflict to determine the correct implementation. The conflicts suggest two parallel development efforts that need reconciliation.
 
 ### 2. Files That Can Likely Be Merged (1 file) ✅
 
 | File | Change Type | Description |
-|------|-------------|-------------|
+| ------ | ------------- | ------------- |
 | `src/game.py` | Additions only | Adds continuous screenshot capture to memory for pause screen (2 lines). Non-invasive change that adds functionality without removing existing code. |
 
 **Recommendation:** Safe to merge after code review. The addition enables the pause screen to have a blurred background without explicit screenshot triggering.
@@ -63,6 +68,7 @@ These files have significant changes that need careful evaluation:
 **Nature:** Performance/stability fix
 
 **Key Changes:**
+
 - Wraps time values in noise lookup to prevent unbounded accumulation
 - Uses `mod(time, 100.0)` to prevent runaway values
 - Addresses potential shader precision issues with long-running applications
@@ -75,6 +81,7 @@ These files have significant changes that need careful evaluation:
 **Nature:** Feature addition (audio ducking)
 
 **Key Changes:**
+
 - Adds `duck_music()` method to lower music volume temporarily
 - Adds `unduck_music()` method to restore volume
 - Tracks ducking state with `_is_ducked` flag
@@ -88,12 +95,14 @@ These files have significant changes that need careful evaluation:
 **Nature:** Major refactoring
 
 **Key Changes:**
+
 - Adds `_normalize_asset_name()` static method for consistent asset naming
 - Implements slug-style naming convention (lowercase, hyphenated)
 - Significant changes to font loading and caching logic
 - Potential breaking changes to asset lookup API
 
 **Recommendation:** This is a significant refactoring that changes how assets are named and accessed. Requires thorough review to ensure:
+
 1. Backward compatibility with existing asset references
 2. All asset files are named according to new conventions
 3. No breaking changes for existing code
@@ -158,6 +167,7 @@ The following file categories are identical between `.compare` and the repositor
 ### 1. API Inconsistency
 
 The merge conflicts reveal two different approaches to audio asset management:
+
 - **Approach A:** Normalized names without extensions (`'background'`, `'title'`)
 - **Approach B:** Filenames with extensions (`'game_music.ogg'`, `'menu_music.ogg'`)
 
@@ -171,7 +181,8 @@ The `asset_manager.py` refactoring could break existing code if asset names don'
 
 **Risk:** Game may fail to load assets after merge.
 
-**Mitigation:** 
+**Mitigation:**
+
 1. Test thoroughly with all asset files
 2. Update asset references if needed
 3. Consider migration script if many assets need renaming

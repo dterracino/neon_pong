@@ -84,10 +84,21 @@ class Ball:
         # Increase speed
         self.speed = min(self.speed + BALL_SPEED_INCREMENT, BALL_MAX_SPEED)
         
-        # Set new velocity
+        # Set new velocity, blending in paddle spin
         direction = 1 if self.velocity_x < 0 else -1
-        self.velocity_x = math.cos(angle) * self.speed * direction
-        self.velocity_y = math.sin(angle) * self.speed
+        base_vy = math.sin(angle) * self.speed
+
+        # Spin: moving paddle deflects ball proportionally to paddle speed
+        # spin_factor is set per-paddle (player=0.25, AI varies by difficulty)
+        spin_influence = paddle.velocity_y * paddle.spin_factor
+        new_vy = base_vy + spin_influence
+
+        # Renormalize to preserve ball speed
+        new_vx = math.cos(angle) * self.speed * direction
+        actual_speed = math.sqrt(new_vx ** 2 + new_vy ** 2)
+        scale = self.speed / actual_speed
+        self.velocity_x = new_vx * scale
+        self.velocity_y = new_vy * scale
         
         # Move ball out of paddle
         if direction == 1:  # Hit left paddle

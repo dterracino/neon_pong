@@ -1,4 +1,5 @@
 # File Comparison Report
+
 **Date:** tmp
 **Repository:** neon_pong
 **Total Files Analyzed:** 43
@@ -118,14 +119,15 @@
 **Recommendation:** MIXED CHANGES: 6 additions, 2 deletions. Review changes carefully to determine merge strategy.
 
 **Change Summary:**
+
 - Additions: 6 lines
 - Deletions: 2 lines
 - Total diff lines: 24
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/shaders/dust_overlay.frag
 +++ .compare/shaders/dust_overlay.frag
 @@ -77,7 +77,9 @@
@@ -150,9 +152,9 @@
 
          // Particle position (wraps around screen)
          vec2 particlePos = vec2(
-```
 
 </details>
+```
 
 ---
 
@@ -227,14 +229,15 @@
 **Recommendation:** MIXED CHANGES: 23 additions, 1 deletions. Review changes carefully to determine merge strategy.
 
 **Change Summary:**
+
 - Additions: 23 lines
 - Deletions: 1 lines
 - Total diff lines: 43
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/audio/audio_manager.py
 +++ .compare/src/audio/audio_manager.py
 @@ -14,6 +14,7 @@
@@ -278,9 +281,9 @@
 
      def set_sfx_volume(self, volume: float):
          """Set sound effects volume (0.0 to 1.0)"""
-```
 
 </details>
+```
 
 ---
 
@@ -331,14 +334,15 @@
 **Recommendation:** ADDITIONS ONLY: 2 line(s) added. These additions can likely be merged into the original file. Review changes to ensure they don't conflict with existing functionality.
 
 **Change Summary:**
+
 - Additions: 2 lines
 - Deletions: 0 lines
 - Total diff lines: 11
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/game.py
 +++ .compare/src/game.py
 @@ -206,6 +206,8 @@
@@ -350,9 +354,9 @@
 
              if frame_count < 5:
                  logger.debug("Frame %d complete", frame_count)
-```
 
 </details>
+```
 
 ---
 
@@ -363,14 +367,15 @@
 **Recommendation:** MIXED CHANGES: 96 additions, 44 deletions. Review changes carefully to determine merge strategy.
 
 **Change Summary:**
+
 - Additions: 96 lines
 - Deletions: 44 lines
 - Total diff lines: 173
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/managers/asset_manager.py
 +++ .compare/src/managers/asset_manager.py
 @@ -52,23 +52,90 @@
@@ -423,9 +428,9 @@
 +
 
 ... (123 more lines)
-```
 
 </details>
+```
 
 ---
 
@@ -468,14 +473,15 @@
 **Recommendation:** ⚠️ MERGE CONFLICTS DETECTED: The .compare file contains unresolved merge conflict markers (<<<<<<< HEAD, =======, >>>>>>>). This file needs manual conflict resolution before it can be merged. The differences shown represent both sides of the conflict.
 
 **Change Summary:**
+
 - Additions: 28 lines
 - Deletions: 6 lines
 - Total diff lines: 71
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/scenes/game_scene.py
 +++ .compare/src/scenes/game_scene.py
 @@ -66,20 +66,28 @@
@@ -528,9 +534,9 @@
 +
 
 ... (21 more lines)
-```
 
 </details>
+```
 
 ---
 
@@ -541,14 +547,15 @@
 **Recommendation:** ⚠️ MERGE CONFLICTS DETECTED: The .compare file contains unresolved merge conflict markers (<<<<<<< HEAD, =======, >>>>>>>). This file needs manual conflict resolution before it can be merged. The differences shown represent both sides of the conflict.
 
 **Change Summary:**
+
 - Additions: 8 lines
 - Deletions: 0 lines
 - Total diff lines: 32
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/scenes/menu_scene.py
 +++ .compare/src/scenes/menu_scene.py
 @@ -52,8 +52,13 @@
@@ -581,9 +588,9 @@
                  self._select_option()
 
      def _on_selection_change(self):
-```
 
 </details>
+```
 
 ---
 
@@ -594,14 +601,15 @@
 **Recommendation:** ⚠️ MERGE CONFLICTS DETECTED: The .compare file contains unresolved merge conflict markers (<<<<<<< HEAD, =======, >>>>>>>). This file needs manual conflict resolution before it can be merged. The differences shown represent both sides of the conflict.
 
 **Change Summary:**
+
 - Additions: 11 lines
 - Deletions: 1 lines
 - Total diff lines: 41
 
+```diff
 <details>
 <summary>View Diff (first 50 lines)</summary>
 
-```diff
 --- original/src/scenes/pause_scene.py
 +++ .compare/src/scenes/pause_scene.py
 @@ -110,9 +110,14 @@
@@ -643,9 +651,9 @@
                  if self.selected_option == 0:  # Resume
                      self.scene_manager.pop_scene()
                  elif self.selected_option == 1:  # Quit to Menu
-```
 
 </details>
+```
 
 ---
 
@@ -763,4 +771,3 @@
 - `src/utils/logging_config.py`
 - `src/utils/screenshot.py`
 - `src/utils/tweening.py`
-

@@ -2,7 +2,7 @@
 
 ## Overview at a Glance
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    FILE COMPARISON SUMMARY                       │
 ├─────────────────────────────────────────────────────────────────┤
@@ -19,7 +19,7 @@
 ### 🚨 URGENT: Merge Conflicts (3 files)
 
 | File | Issue | Lines Changed |
-|------|-------|---------------|
+| ------ | ------- | --------------- |
 | `src/scenes/game_scene.py` | Audio API + Screenshot + Score sounds | +28 / -6 |
 | `src/scenes/menu_scene.py` | Audio API + Menu sounds | +8 / -0 |
 | `src/scenes/pause_scene.py` | Duck vs Pause + Menu sounds | +11 / -1 |
@@ -31,7 +31,7 @@
 ### ✅ Safe to Merge (1 file)
 
 | File | Change Type | Lines Changed | Risk |
-|------|-------------|---------------|------|
+| ------ | ------------- | --------------- | ------ |
 | `src/game.py` | Addition only | +2 / -0 | Low |
 
 **Action Required:** Code review only
@@ -41,7 +41,7 @@
 ### 📋 Requires Review (3 files)
 
 | File | Change Type | Lines Changed | Risk | Priority |
-|------|-------------|---------------|------|----------|
+| ------ | ------------- | --------------- | ------ | ---------- |
 | `shaders/dust_overlay.frag` | Bug fix | +6 / -2 | Low | High |
 | `src/audio/audio_manager.py` | Feature add | +23 / -1 | Low | Medium |
 | `src/managers/asset_manager.py` | Major refactor | +96 / -44 | High | Low |
@@ -54,7 +54,7 @@
 
 ### By Type
 
-```
+```text
 Identical (No Changes)     ████████████████████████████████████ 36 files (83.7%)
 Small Changes              ██                                    2 files (4.7%)
 Medium Changes             ██                                    2 files (4.7%)
@@ -65,7 +65,7 @@ Merge Conflicts            ██                                    2 files (4.
 ### By Area
 
 | Area | Total Files | Identical | Different | Conflict |
-|------|-------------|-----------|-----------|----------|
+| ------ | ------------- | ----------- | ----------- | ---------- |
 | Shaders | 17 | 16 (94.1%) | 1 (5.9%) | 0 |
 | Scenes | 3 | 0 (0%) | 0 (0%) | 3 (100%) |
 | Managers | 3 | 2 (66.7%) | 1 (33.3%) | 0 |
@@ -137,12 +137,14 @@ Merge Conflicts            ██                                    2 files (4.
 
 ### 1. Audio API Approach
 
-**Option A: Normalized Names (HEAD)**
+Option A: Normalized Names (HEAD)
+
 - Assets referenced without extensions: `'background'`, `'title'`, `'menu-move'`
 - Requires asset_manager.py refactoring
 - More flexible, easier to change file formats later
 
-**Option B: File Extensions (Other)**
+Option B: File Extensions (Other)
+
 - Assets referenced with extensions: `'game_music.ogg'`, `'menu_music.ogg'`
 - Uses current asset_manager.py
 - More explicit, shows exact file names
@@ -153,12 +155,14 @@ Merge Conflicts            ██                                    2 files (4.
 
 ### 2. Pause Music Behavior
 
-**Option A: Audio Ducking (HEAD)**
+Option A: Audio Ducking (HEAD)
+
 - Music continues at 50% volume during pause
 - More immersive, modern UX
 - Requires audio_manager.py changes
 
-**Option B: Music Pausing (Other)**
+Option B: Music Pausing (Other)
+
 - Music stops completely during pause
 - Traditional approach
 - Uses existing code
@@ -169,12 +173,14 @@ Merge Conflicts            ██                                    2 files (4.
 
 ### 3. Menu Sound Effects
 
-**Option A: With Sounds (HEAD)**
+Option A: With Sounds (HEAD)
+
 - Navigation sounds: `menu-move`, `menu-select`, `pause`
 - More feedback for user
 - Requires sound assets
 
-**Option B: No Sounds (Other)**
+Option B: No Sounds (Other)
+
 - Silent menu navigation
 - Simpler implementation
 
@@ -185,14 +191,17 @@ Merge Conflicts            ██                                    2 files (4.
 ## Risk Assessment
 
 ### Low Risk Changes (Merge Soon)
+
 - ✅ `shaders/dust_overlay.frag` - Bug fix, well-contained
 - ✅ `src/game.py` - Simple addition, easy to revert
 
 ### Medium Risk Changes (Test Thoroughly)
+
 - ⚠️ `src/audio/audio_manager.py` - New feature, backward compatible
 - ⚠️ Scene conflict resolutions - Affects core gameplay
 
 ### High Risk Changes (Plan Carefully)
+
 - 🚨 `src/managers/asset_manager.py` - Major refactoring, breaking changes possible
 
 ---
@@ -200,7 +209,7 @@ Merge Conflicts            ██                                    2 files (4.
 ## Testing Requirements by File
 
 | File | Unit Tests | Integration Tests | Manual Testing |
-|------|-----------|-------------------|----------------|
+| ------ | ----------- | ------------------- | ---------------- |
 | `dust_overlay.frag` | N/A | Shader rendering | Visual check |
 | `game.py` | Screenshot capture | Pause screen blur | Pause/resume cycle |
 | `audio_manager.py` | Duck/unduck methods | Music volume levels | Listen to transitions |
@@ -240,6 +249,7 @@ Merge Conflicts            ██                                    2 files (4.
 Use this checklist to track your progress:
 
 ### Week 1: Critical Issues
+
 - [ ] Decide on audio API approach
 - [ ] Decide on pause behavior  
 - [ ] Decide on menu sound effects
@@ -251,12 +261,14 @@ Use this checklist to track your progress:
 - [ ] Merge game.py
 
 ### Week 2: Feature Additions (Optional)
+
 - [ ] Decide on audio ducking
 - [ ] Review audio_manager.py
 - [ ] Test audio ducking
 - [ ] Merge audio_manager.py (if approved)
 
 ### Week 3+: Refactoring (Optional)
+
 - [ ] Review asset_manager.py
 - [ ] Audit asset files
 - [ ] Create migration plan

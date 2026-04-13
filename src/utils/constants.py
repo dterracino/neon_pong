@@ -62,6 +62,7 @@ AI_DIFFICULTIES = {
         'update_frequency': 0.2,     # How often AI recalculates target (seconds)
         'dead_zone': 20,             # Don't move if within this many pixels of target
         'adaptive': False,           # Don't adjust difficulty based on score
+        'spin_factor': 0.0,          # No spin influence
     },
     'normal': {
         'reaction_time': 0.15,       # Faster reaction
@@ -70,6 +71,7 @@ AI_DIFFICULTIES = {
         'update_frequency': 0.1,     # Update more frequently
         'dead_zone': 15,             # Smaller dead zone
         'adaptive': False,           # Don't adjust difficulty
+        'spin_factor': 0.25,         # Same spin as human player
     },
     'hard': {
         'reaction_time': 0.05,       # Very fast reaction
@@ -78,6 +80,7 @@ AI_DIFFICULTIES = {
         'update_frequency': 0.05,    # Update very frequently
         'dead_zone': 10,             # Very small dead zone
         'adaptive': True,            # Adjust difficulty based on score
+        'spin_factor': 0.5,          # Double spin influence
     },
 }
 

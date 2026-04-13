@@ -24,8 +24,8 @@ void main() {
     wave += sin(uv.y * 10.0 + time * 1.5) * 0.5;
     wave += sin(uv.y * 6.0 - time * 1.0) * 0.3;
     
-    // Vertical waves
-    wave += sin(uv.x * 8.0 + time * 1.2) * 0.4;
+    // Vertical waves (aspect-corrected)
+    wave += sin(coord.x * 4.5 + time * 1.2) * 0.4;
     
     // Create color based on wave intensity
     vec3 waveColor = vec3(0.0);
@@ -38,7 +38,7 @@ void main() {
     }
     
     // Add some grid lines
-    float gridX = abs(sin(uv.x * 20.0));
+    float gridX = abs(sin(coord.x * 11.0));
     float gridY = abs(sin(uv.y * 20.0));
     float grid = (gridX < 0.05 || gridY < 0.05) ? 0.1 : 0.0;
     vec3 gridColor = vec3(0.3, 0.2, 0.5) * grid;

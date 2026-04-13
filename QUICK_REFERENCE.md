@@ -7,6 +7,7 @@ This document provides a quick lookup for the 7 files that have differences betw
 ### 1. `src/scenes/game_scene.py`
 
 **Conflicts:**
+
 - Line 66-74: Music playback method
   - HEAD: `self.audio_manager.play_music('background')`
   - Other: `self.audio_manager.play_music('game_music.ogg')`
@@ -26,6 +27,7 @@ This document provides a quick lookup for the 7 files that have differences betw
 ### 2. `src/scenes/menu_scene.py`
 
 **Conflicts:**
+
 - Line 52-60: Music playback method
   - HEAD: `self.audio_manager.play_music('title')`
   - Other: `self.audio_manager.play_music('menu_music.ogg')`
@@ -34,7 +36,8 @@ This document provides a quick lookup for the 7 files that have differences betw
   - HEAD: Includes `menu-move` and `menu-select` sounds
   - Other: No sound effects
 
-**Decision Needed:** 
+**Decision Needed:**
+
 1. Choose audio API approach
 2. Decide if menu navigation sounds should be included
 
@@ -43,6 +46,7 @@ This document provides a quick lookup for the 7 files that have differences betw
 ### 3. `src/scenes/pause_scene.py`
 
 **Conflicts:**
+
 - Line 110-124: Pause behavior
   - HEAD: `duck_music(0.5)` - Lower volume to 50%
   - Other: `pause_music()` - Stop music completely
@@ -52,6 +56,7 @@ This document provides a quick lookup for the 7 files that have differences betw
   - Other: No sound effects
 
 **Decision Needed:**
+
 1. Choose pause behavior (ducking vs stopping music)
 2. Decide if pause menu sounds should be included
 
@@ -89,6 +94,7 @@ self.screenshot_manager.capture_to_memory(self.screen)
 **Key Modifications:**
 
 **Change 1 (Lines 80-82):**
+
 ```glsl
 // OLD:
 float noiseVal = noise(vec2(particleId * 0.1, timeScale * freq));
@@ -99,6 +105,7 @@ float noiseVal = noise(vec2(particleId * 0.1, wrappedTime));
 ```
 
 **Change 2 (Lines 97-99):**
+
 ```glsl
 // OLD:
 vec2 displacement = velocity * time;
@@ -123,6 +130,7 @@ vec2 displacement = velocity * wrappedTime;
 **New Features Added:**
 
 1. **Duck/Unduck Methods:**
+
 ```python
 def duck_music(self, duck_amount: float = 0.5):
     """Lower music volume (audio ducking)"""
@@ -138,10 +146,12 @@ def unduck_music(self):
         pygame.mixer.music.set_volume(self.music_volume)
 ```
 
-2. **State Tracking:**
+1. **State Tracking:**
+
 - Added `self._is_ducked` flag to track ducking state
 
-3. **Modified `set_music_volume()`:**
+1. **Modified `set_music_volume()`:**
+
 - Now respects ducking state when changing volume
 
 **Dependencies:** Used by `src/scenes/pause_scene.py` (if ducking approach is chosen)
@@ -159,13 +169,15 @@ def unduck_music(self):
 **Major Changes:**
 
 1. **New Static Method:**
+
 ```python
 @staticmethod
 def _normalize_asset_name(filename: str) -> str:
     """Normalize asset name: lowercase, no extension, slug-style"""
 ```
 
-2. **Asset Naming Convention:**
+1. **Asset Naming Convention:**
+
 - Converts filenames to lowercase, hyphenated format
 - Removes file extensions
 - Examples:
@@ -173,17 +185,20 @@ def _normalize_asset_name(filename: str) -> str:
   - `"Retro Gaming.ttf"` → `"retro-gaming"`
   - `"Menu__Select!!!.wav"` → `"menu-select"`
 
-3. **Modified Methods:**
+1. **Modified Methods:**
+
 - Significant changes to `get_font()` and asset lookup logic
 - Changes to how assets are cached and retrieved
 
-**Dependencies:** 
+**Dependencies:**
+
 - Affects how all assets are referenced throughout the codebase
 - Related to the audio API conflicts (normalized names vs file extensions)
 
 **Risk:** High - breaking changes if asset names don't match new convention
 
-**Recommendation:** 
+**Recommendation:**
+
 1. Review thoroughly
 2. Test with all existing assets
 3. May need to rename asset files or update references

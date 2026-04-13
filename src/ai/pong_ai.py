@@ -48,6 +48,9 @@ class PongAI:
         self.update_timer = 0.0
         self.is_reacting = False
         
+        # Apply spin factor to the controlled paddle
+        self.paddle.spin_factor = self.config['spin_factor']
+
         logger.debug("AI initialized with difficulty '%s'", difficulty)
         logger.debug("AI config: %s", self.config)
     

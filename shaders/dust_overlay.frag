@@ -77,7 +77,9 @@ void main() {
         float angleOffset = 0.0;
         for (int octave = 0; octave < 8; octave++) {
             float freq = pow(2.0, float(octave)) * directionChangeRate;
-            float noiseVal = noise(vec2(particleId * 0.1, timeScale * freq));
+            // Wrap time in noise lookup to prevent unbounded accumulation
+            float wrappedTime = mod(timeScale * freq, 100.0);
+            float noiseVal = noise(vec2(particleId * 0.1, wrappedTime));
             
             // Convert noise to angle change (±22.5 degrees = ±0.3927 radians)
             // Weight decreases with each octave for smoother motion
@@ -92,7 +94,9 @@ void main() {
         vec2 velocity = vec2(cos(currentAngle), sin(currentAngle)) * baseSpeed;
         
         // Integrate velocity over time to get position
-        vec2 displacement = velocity * time;
+        // Wrap time to prevent runaway displacement values
+        float wrappedTime = mod(time, 100.0);
+        vec2 displacement = velocity * wrappedTime;
         
         // Particle position (wraps around screen)
         vec2 particlePos = vec2(

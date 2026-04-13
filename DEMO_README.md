@@ -63,6 +63,7 @@ python demo_backgrounds.py
 ## Technical Details
 
 The demo application uses:
+
 - **pygame** for window management and event handling
 - **ModernGL** for OpenGL context and shader rendering
 - **ShaderManager** from the main game for shader compilation and loading
@@ -82,6 +83,7 @@ When running, each shader provides unique visual effects:
 ## Development
 
 This demo is useful for:
+
 - Testing shader changes without running the full game
 - Showcasing the visual styles available in Neon Pong
 - Debugging shader compilation and rendering issues

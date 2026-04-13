@@ -11,7 +11,8 @@ A retro Pong game with modern graphics featuring neon-vaporwave aesthetics, bloo
 - 🌈 Neon-vaporwave color scheme
 - 🎵 Sound effects and background music support
 - 🎯 Single-player vs AI or two-player local multiplayer
-- 🤖 AI opponent with ball-tracking behavior
+- 🤖 AI opponent with three difficulty levels (Easy, Normal, Hard)
+- 🏓 **Spin mechanic** — moving paddle while hitting deflects the ball, altering its exit angle
 - 💫 Particle effects and screen shake
 - 🚀 **Performance-optimized text rendering with intelligent caching**
 - 📸 **Screenshot capture** with Ctrl-S
@@ -61,7 +62,7 @@ You can also run `python tests/test_debug_output.py` to see what normal debug ou
 
 ## Project Structure
 
-```
+```text
 pong-moderngl/
 ├── main.py                      # Entry point
 ├── requirements.txt             # Dependencies
@@ -104,6 +105,7 @@ pong-moderngl/
 ### Animated Backgrounds
 
 Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
+
 - **Starfield**: Parallax star layers with twinkling (default)
 - **Plasma**: Smooth flowing neon colors
 - **Waves**: Animated wave patterns with retro grid
@@ -112,6 +114,7 @@ Choose from multiple GPU-rendered backgrounds in `src/utils/constants.py`:
 ### Post-Processing Style Effects
 
 Apply retro visual effects in `src/utils/constants.py`:
+
 - **None**: Clean modern look (default)
 - **Scanlines**: Horizontal scanlines like old monitors
 - **CRT**: Full CRT simulation with curvature and phosphor glow
@@ -124,12 +127,40 @@ See [docs/BACKGROUND_SHADERS.md](docs/BACKGROUND_SHADERS.md) for details.
 ### Tweening/Animation System
 
 The game includes a comprehensive tweening library with 31 easing functions for smooth animations:
+
 - **11 Easing Categories**: Linear, Quad, Cubic, Quart, Quint, Sine, Expo, Circ, Elastic, Back, Bounce
 - **In/Out/InOut Variations**: Fine control over animation curves
 - **TweenManager**: Manage multiple concurrent animations
 - **Perfect for**: UI transitions, screen fades, smooth movement, particle effects
 
 See [docs/TWEENING.md](docs/TWEENING.md) for complete documentation and examples.
+
+### AI Opponent
+
+The AI paddle is controlled by a trajectory-prediction system with three configurable difficulty levels:
+
+| Feature | Easy | Normal | Hard |
+| --- | --- | --- | --- |
+| Reaction time | 0.3 s | 0.15 s | 0.05 s |
+| Movement speed | 60% | 80% | 100% |
+| Prediction error | ±80 px | ±40 px | ±15 px |
+| Target update rate | 5 Hz | 10 Hz | 20 Hz |
+| Spin influence | None | Same as player | 2× player |
+| Adaptive difficulty | No | No | Yes |
+
+**Spin influence** — On Normal the AI generates the same spin effect as a human player when its paddle is in motion at contact. On Hard the influence is doubled, allowing the AI to hit sharper deflection angles.
+
+**Adaptive difficulty (Hard only)** — If the AI falls 3 or more points behind, it automatically tightens its reaction time, reduces prediction error, and increases speed to compensate.
+
+### Spin Mechanic
+
+When a paddle is moving at the moment the ball makes contact, the paddle's vertical velocity is blended into the ball's outgoing trajectory:
+
+- A paddle moving **in the same direction** as the ball's Y-velocity steepens the angle.
+- A paddle moving **against** the ball's Y-velocity flattens it, or even reverses it back toward center.
+- The ball speed is **preserved** — the velocity vector is renormalized after spin is applied, so spin changes direction only, never speed.
+
+The blend weight (`spin_factor`) is 0.25 for human players — at full paddle speed this shifts the Y component by 25% before renormalization.
 
 ### Color Scheme
 
