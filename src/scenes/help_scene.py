@@ -172,7 +172,7 @@ class HelpScene(Scene):
         self.renderer.draw_text(
             "HELP  —  KEY BINDINGS",
             WINDOW_WIDTH // 2, 40,
-            FONT_SIZE_DEFAULT, COLOR_YELLOW, font_name="sys:calibri", centered=True
+            FONT_SIZE_DEFAULT, COLOR_YELLOW, font_name="sys:Arial Bold", centered=True
         )
 
         # Layout: three columns across the screen
@@ -184,7 +184,7 @@ class HelpScene(Scene):
             y = section_y_start
 
             # Section heading
-            self.renderer.draw_text(heading, x, y, FONT_SIZE_DEFAULT, heading_color, font_name="sys:calibri", centered=True)
+            self.renderer.draw_text(heading, x, y, FONT_SIZE_DEFAULT, heading_color, font_name="sys:Arial Bold", centered=True)
             y += FONT_SIZE_DEFAULT + 12
 
             # Divider line (drawn as a thin rect)
@@ -194,11 +194,11 @@ class HelpScene(Scene):
             # Key / description pairs
             for key, desc in bindings:
                 self.renderer.draw_text(
-                    key, x - 10, y, FONT_SIZE_SMALL, COLOR_YELLOW, font_name="sys:calibri", centered=True
+                    key, x - 10, y, FONT_SIZE_SMALL, COLOR_YELLOW, font_name="sys:Arial Bold", centered=True
                 )
                 y += FONT_SIZE_SMALL + 4
                 self.renderer.draw_text(
-                    desc, x, y, FONT_SIZE_SMALL, COLOR_CYAN, font_name="sys:calibri", centered=True
+                    desc, x, y, FONT_SIZE_SMALL, COLOR_CYAN, font_name="sys:Arial Bold", centered=True
                 )
                 y += FONT_SIZE_SMALL + 16
 
@@ -206,7 +206,7 @@ class HelpScene(Scene):
         self.renderer.draw_text(
             "Press  F1  or  ESC  to close",
             WINDOW_WIDTH // 2, WINDOW_HEIGHT - 40,
-            FONT_SIZE_SMALL, COLOR_MINT, font_name="sys:calibri", centered=True
+            FONT_SIZE_SMALL, COLOR_MINT, font_name="sys:Arial Bold", centered=True
         )
 
         self.renderer.end_frame()
