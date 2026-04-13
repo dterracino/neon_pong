@@ -1,112 +1,90 @@
-#!/usr/bin/env python3
-"""
-Unit test for screenshot manager (no OpenGL required)
-"""
+"""Unit tests for ScreenshotManager (no OpenGL required)."""
 import os
 import sys
-import tempfile
 import shutil
+import tempfile
+import unittest
 
-# Disable audio for testing
 os.environ['SDL_AUDIODRIVER'] = 'dummy'
-
-import pygame
-from src.utils.screenshot import ScreenshotManager
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 
-def test_screenshot_manager():
-    """Test screenshot manager functionality"""
-    print("Testing ScreenshotManager...")
-    
-    # Create a temporary directory for screenshots
-    temp_dir = tempfile.mkdtemp(prefix="test_screenshots_")
-    print(f"Using temporary directory: {temp_dir}")
-    
-    try:
-        # Initialize pygame
+class TestScreenshotManager(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import pygame
         pygame.init()
-        
-        # Create a simple surface (no OpenGL needed)
-        width, height = 800, 600
-        screen = pygame.Surface((width, height))
-        
-        # Draw something on the surface
-        screen.fill((10, 5, 30))  # Dark background
-        pygame.draw.circle(screen, (255, 113, 206), (width//2, height//2), 100)  # Pink circle
-        pygame.draw.rect(screen, (1, 205, 254), (50, 50, 100, 100))  # Cyan rectangle
-        
-        # Create screenshot manager
-        screenshot_manager = ScreenshotManager(temp_dir)
-        
-        # Capture screenshot
-        print("Capturing screenshot...")
-        filepath = screenshot_manager.capture(screen)
-        
-        # Verify screenshot was created
-        assert os.path.exists(filepath), f"Screenshot file not found: {filepath}"
-        print(f"✓ Screenshot saved: {filepath}")
-        
-        # Verify file is not empty
-        file_size = os.path.getsize(filepath)
-        assert file_size > 0, "Screenshot file is empty"
-        print(f"✓ Screenshot file size: {file_size} bytes")
-        
-        # Verify filename format
-        filename = os.path.basename(filepath)
-        assert filename.startswith("screenshot_"), "Filename doesn't have correct prefix"
-        assert filename.endswith(".png"), "Filename doesn't have .png extension"
-        print(f"✓ Filename format correct: {filename}")
-        
-        # Test capture to memory without saving
-        print("\nTesting capture to memory...")
-        screenshot_surface = screenshot_manager.capture_to_memory(screen)
-        assert screenshot_surface is not None, "Screenshot surface should not be None"
-        assert screenshot_surface.get_size() == screen.get_size(), "Screenshot size should match screen size"
-        print(f"✓ Capture to memory successful: {screenshot_surface.get_size()}")
-        
-        # Test get_last_screenshot
-        last = screenshot_manager.get_last_screenshot()
-        assert last is not None, "Last screenshot should not be None"
-        assert last.get_size() == screen.get_size(), "Last screenshot size should match screen size"
-        print(f"✓ get_last_screenshot works correctly")
-        
-        # Test multiple screenshots
-        print("\nTesting multiple screenshots...")
-        filepath2 = screenshot_manager.capture(screen)
-        assert filepath != filepath2, "Multiple screenshots should have different filenames"
-        print(f"✓ Second screenshot saved: {os.path.basename(filepath2)}")
-        
-        # Verify both files exist
-        screenshots = [f for f in os.listdir(temp_dir) if f.endswith('.png')]
-        assert len(screenshots) == 2, f"Expected 2 screenshots, found {len(screenshots)}"
-        print(f"✓ Both screenshots exist in directory")
-        
-        # Test capture without saving to disk
-        print("\nTesting capture without saving to disk...")
-        initial_count = len([f for f in os.listdir(temp_dir) if f.endswith('.png')])
-        result = screenshot_manager.capture(screen, save_to_disk=False)
-        assert result == "", "Should return empty string when not saving to disk"
-        final_count = len([f for f in os.listdir(temp_dir) if f.endswith('.png')])
-        assert initial_count == final_count, "File count should not change when save_to_disk=False"
-        print(f"✓ Capture without save to disk works correctly")
-        
-        print("\n✓ All tests passed!")
-        return True
-        
-    except Exception as e:
-        print(f"\n✗ Test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-        
-    finally:
-        # Clean up
+        cls.temp_dir = tempfile.mkdtemp(prefix='test_screenshots_')
+
+    @classmethod
+    def tearDownClass(cls):
+        import pygame
         pygame.quit()
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-            print(f"\nCleaned up temporary directory: {temp_dir}")
+        if os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir)
+
+    def _make_surface(self, w=800, h=600):
+        import pygame
+        surface = pygame.Surface((w, h))
+        surface.fill((10, 5, 30))
+        pygame.draw.circle(surface, (255, 113, 206), (w // 2, h // 2), 100)
+        return surface
+
+    def test_capture_creates_file(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        surface = self._make_surface()
+        filepath = manager.capture(surface)
+        self.assertTrue(os.path.exists(filepath))
+
+    def test_captured_file_not_empty(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        filepath = manager.capture(self._make_surface())
+        self.assertGreater(os.path.getsize(filepath), 0)
+
+    def test_captured_filename_format(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        filepath = manager.capture(self._make_surface())
+        filename = os.path.basename(filepath)
+        self.assertTrue(filename.startswith('screenshot_'))
+        self.assertTrue(filename.endswith('.png'))
+
+    def test_capture_to_memory(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        surface = self._make_surface()
+        result = manager.capture_to_memory(surface)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.get_size(), surface.get_size())
+
+    def test_get_last_screenshot(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        surface = self._make_surface()
+        manager.capture_to_memory(surface)
+        last = manager.get_last_screenshot()
+        self.assertIsNotNone(last)
+        self.assertEqual(last.get_size(), surface.get_size())
+
+    def test_multiple_screenshots_have_different_names(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        surface = self._make_surface()
+        path1 = manager.capture(surface)
+        path2 = manager.capture(surface)
+        self.assertNotEqual(path1, path2)
+
+    def test_capture_without_saving_returns_empty_string(self):
+        from src.utils.screenshot import ScreenshotManager
+        manager = ScreenshotManager(self.temp_dir)
+        before = len([f for f in os.listdir(self.temp_dir) if f.endswith('.png')])
+        result = manager.capture(self._make_surface(), save_to_disk=False)
+        after = len([f for f in os.listdir(self.temp_dir) if f.endswith('.png')])
+        self.assertEqual(result, '')
+        self.assertEqual(before, after)
 
 
-if __name__ == "__main__":
-    success = test_screenshot_manager()
-    sys.exit(0 if success else 1)
+if __name__ == '__main__':
+    unittest.main()

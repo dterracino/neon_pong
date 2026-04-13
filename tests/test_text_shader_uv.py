@@ -42,7 +42,7 @@ class TestUVCoordinates(unittest.TestCase):
         vert_path = os.path.join(os.path.dirname(__file__), '..', 'shaders', 'text.vert')
         with open(vert_path) as f:
             content = f.read()
-        self.assertIn('in_texcoord', content)
+        self.assertIn('in_uv', content)
 
 
 if __name__ == '__main__':

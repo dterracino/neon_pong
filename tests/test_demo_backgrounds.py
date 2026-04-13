@@ -1,62 +1,45 @@
-#!/usr/bin/env python3
-"""
-Test that the demo backgrounds app is properly structured
-"""
+"""Unit tests for demo_backgrounds module structure."""
 import os
 import sys
+import unittest
 
-def test_demo_structure():
-    """Test that demo app has correct structure"""
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    
-    # Import the module
-    import demo_backgrounds
-    
-    # Check that SHADERS dict exists
-    assert hasattr(demo_backgrounds, 'SHADERS'), "SHADERS dict not found"
-    assert len(demo_backgrounds.SHADERS) == 5, "Should have 5 shaders defined"
-    
-    # Check that all required shaders are present
-    expected_shaders = ['starfield', 'plasma', 'waves', 'retrowave', 'retro']
-    for shader in expected_shaders:
-        assert shader in demo_backgrounds.SHADERS, f"Shader '{shader}' not found in SHADERS"
-    
-    # Check that BackgroundShaderDemo class exists
-    assert hasattr(demo_backgrounds, 'BackgroundShaderDemo'), "BackgroundShaderDemo class not found"
-    
-    # Verify each shader has required fields
-    for shader_id, config in demo_backgrounds.SHADERS.items():
-        assert 'name' in config, f"Shader {shader_id} missing 'name' field"
-        assert 'vertex' in config, f"Shader {shader_id} missing 'vertex' field"
-        assert 'fragment' in config, f"Shader {shader_id} missing 'fragment' field"
-        assert 'key' in config, f"Shader {shader_id} missing 'key' field"
-        assert 'description' in config, f"Shader {shader_id} missing 'description' field"
-        
-        # Verify shader files exist
-        shader_dir = os.path.join(os.path.dirname(__file__), '..', 'shaders')
-        vertex_path = os.path.join(shader_dir, config['vertex'])
-        fragment_path = os.path.join(shader_dir, config['fragment'])
-        
-        assert os.path.exists(vertex_path), f"Vertex shader not found: {vertex_path}"
-        assert os.path.exists(fragment_path), f"Fragment shader not found: {fragment_path}"
-    
-    print("✓ Demo app structure is correct")
-    print(f"✓ All {len(demo_backgrounds.SHADERS)} shaders are configured")
-    print("✓ All shader files exist")
-    print("✓ BackgroundShaderDemo class is defined")
-    
-    return True
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-if __name__ == "__main__":
-    try:
-        if test_demo_structure():
-            print("\n✓ All demo app tests PASSED!")
-            sys.exit(0)
-        else:
-            print("\n✗ Demo app tests FAILED!")
-            sys.exit(1)
-    except Exception as e:
-        print(f"\n✗ Error testing demo app: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+SHADER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shaders')
+
+
+class TestDemoBackgroundsStructure(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import demo_backgrounds
+        cls.module = demo_backgrounds
+
+    def test_shaders_dict_exists(self):
+        self.assertTrue(hasattr(self.module, 'SHADERS'))
+
+    def test_shaders_dict_has_five_entries(self):
+        self.assertEqual(len(self.module.SHADERS), 5)
+
+    def test_expected_shader_ids_present(self):
+        expected = {'starfield', 'plasma', 'waves', 'retrowave', 'retro'}
+        self.assertEqual(set(self.module.SHADERS.keys()), expected)
+
+    def test_demo_class_exists(self):
+        self.assertTrue(hasattr(self.module, 'BackgroundShaderDemo'))
+
+    def test_each_shader_has_required_fields(self):
+        required_fields = {'name', 'vertex', 'fragment', 'key', 'description'}
+        for shader_id, config in self.module.SHADERS.items():
+            for field in required_fields:
+                self.assertIn(field, config, f'{shader_id} missing field: {field}')
+
+    def test_shader_files_exist_on_disk(self):
+        for shader_id, config in self.module.SHADERS.items():
+            for kind in ('vertex', 'fragment'):
+                path = os.path.join(SHADER_DIR, config[kind])
+                self.assertTrue(os.path.exists(path),
+                                f'{shader_id} {kind} file not found: {config[kind]}')
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,165 +1,65 @@
-#!/usr/bin/env python3
-"""
-Test script to validate background shaders compile correctly
-"""
+"""Unit tests for background shader files."""
 import os
 import sys
+import unittest
 
-def test_shader_syntax():
-    """Test that shader files exist and have basic valid syntax"""
-    shader_dir = os.path.join(os.path.dirname(__file__), '..', 'shaders')
-    
-    tests_passed = True
-    
-    # Check starfield shader
-    starfield_path = os.path.join(shader_dir, 'background_starfield.frag')
-    if os.path.exists(starfield_path):
-        with open(starfield_path, 'r') as f:
-            content = f.read()
-            if '#version 330' in content and 'void main()' in content:
-                print("✓ Starfield shader file is valid")
-            else:
-                print("✗ Starfield shader file has syntax issues")
-                tests_passed = False
-    else:
-        print("✗ Starfield shader file not found")
-        tests_passed = False
-    
-    # Check plasma shader
-    plasma_path = os.path.join(shader_dir, 'background_plasma.frag')
-    if os.path.exists(plasma_path):
-        with open(plasma_path, 'r') as f:
-            content = f.read()
-            if '#version 330' in content and 'void main()' in content:
-                print("✓ Plasma shader file is valid")
-            else:
-                print("✗ Plasma shader file has syntax issues")
-                tests_passed = False
-    else:
-        print("✗ Plasma shader file not found")
-        tests_passed = False
-    
-    # Check waves shader
-    waves_path = os.path.join(shader_dir, 'background_waves.frag')
-    if os.path.exists(waves_path):
-        with open(waves_path, 'r') as f:
-            content = f.read()
-            if '#version 330' in content and 'void main()' in content:
-                print("✓ Waves shader file is valid")
-            else:
-                print("✗ Waves shader file has syntax issues")
-                tests_passed = False
-    else:
-        print("✗ Waves shader file not found")
-        tests_passed = False
-    
-    # Check retrowave shader
-    retrowave_path = os.path.join(shader_dir, 'background_retrowave.frag')
-    if os.path.exists(retrowave_path):
-        with open(retrowave_path, 'r') as f:
-            content = f.read()
-            if '#version 330' in content and 'void main()' in content:
-                print("✓ Retrowave shader file is valid")
-            else:
-                print("✗ Retrowave shader file has syntax issues")
-                tests_passed = False
-    else:
-        print("✗ Retrowave shader file not found")
-        tests_passed = False
-    
-    # Check retro shader
-    retro_path = os.path.join(shader_dir, 'background_retro.frag')
-    if os.path.exists(retro_path):
-        with open(retro_path, 'r') as f:
-            content = f.read()
-            if '#version 330' in content and 'void main()' in content:
-                print("✓ Retro shader file is valid")
-            else:
-                print("✗ Retro shader file has syntax issues")
-                tests_passed = False
-    else:
-        print("✗ Retro shader file not found")
-        tests_passed = False
-    
-    # Check that they have the required uniforms
-    with open(starfield_path, 'r') as f:
-        content = f.read()
-        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
-            print("✓ Starfield shader has required uniforms")
-        else:
-            print("✗ Starfield shader missing required uniforms")
-            tests_passed = False
-    
-    with open(plasma_path, 'r') as f:
-        content = f.read()
-        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
-            print("✓ Plasma shader has required uniforms")
-        else:
-            print("✗ Plasma shader missing required uniforms")
-            tests_passed = False
-    
-    # waves_path already defined above
-    with open(waves_path, 'r') as f:
-        content = f.read()
-        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
-            print("✓ Waves shader has required uniforms")
-        else:
-            print("✗ Waves shader missing required uniforms")
-            tests_passed = False
-    
-    # retrowave_path already defined above
-    with open(retrowave_path, 'r') as f:
-        content = f.read()
-        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
-            print("✓ Retrowave shader has required uniforms")
-        else:
-            print("✗ Retrowave shader missing required uniforms")
-            tests_passed = False
-    
-    # retro_path already defined above
-    with open(retro_path, 'r') as f:
-        content = f.read()
-        if 'uniform float time' in content and 'uniform vec2 resolution' in content:
-            print("✓ Retro shader has required uniforms")
-        else:
-            print("✗ Retro shader missing required uniforms")
-            tests_passed = False
-    
-    return tests_passed
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-def test_constants_updated():
-    """Test that constants file has background type setting"""
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-    try:
+SHADER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shaders')
+BACKGROUND_SHADERS = [
+    'background_starfield',
+    'background_plasma',
+    'background_waves',
+    'background_retrowave',
+    'background_retro',
+]
+
+
+class TestBackgroundShaderFiles(unittest.TestCase):
+    def _read_shader(self, name):
+        path = os.path.join(SHADER_DIR, f'{name}.frag')
+        self.assertTrue(os.path.exists(path), f'Shader file not found: {name}.frag')
+        with open(path) as f:
+            return f.read()
+
+    def test_all_shader_files_exist(self):
+        for name in BACKGROUND_SHADERS:
+            path = os.path.join(SHADER_DIR, f'{name}.frag')
+            self.assertTrue(os.path.exists(path), f'Missing shader: {name}.frag')
+
+    def test_shaders_have_version_declaration(self):
+        for name in BACKGROUND_SHADERS:
+            content = self._read_shader(name)
+            self.assertIn('#version 330', content, f'{name}: missing #version 330')
+
+    def test_shaders_have_main_function(self):
+        for name in BACKGROUND_SHADERS:
+            content = self._read_shader(name)
+            self.assertIn('void main()', content, f'{name}: missing void main()')
+
+    def test_shaders_have_time_uniform(self):
+        for name in BACKGROUND_SHADERS:
+            content = self._read_shader(name)
+            self.assertIn('uniform float time', content,
+                          f'{name}: missing uniform float time')
+
+    def test_shaders_have_resolution_uniform(self):
+        for name in BACKGROUND_SHADERS:
+            content = self._read_shader(name)
+            self.assertIn('uniform vec2 resolution', content,
+                          f'{name}: missing uniform vec2 resolution')
+
+
+class TestBackgroundConstants(unittest.TestCase):
+    def test_background_type_constant_exists(self):
         from src.utils.constants import BACKGROUND_TYPE
-        print(f"✓ BACKGROUND_TYPE constant found: {BACKGROUND_TYPE}")
-        if BACKGROUND_TYPE in ["starfield", "plasma", "waves", "retrowave", "retro", "solid"]:
-            print(f"✓ BACKGROUND_TYPE has valid value")
-            return True
-        else:
-            print(f"✗ BACKGROUND_TYPE has invalid value")
-            return False
-    except ImportError as e:
-        print(f"✗ Failed to import BACKGROUND_TYPE: {e}")
-        return False
+        self.assertIsNotNone(BACKGROUND_TYPE)
 
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Background Shader Test")
-    print("=" * 60)
-    print()
-    
-    test1 = test_shader_syntax()
-    print()
-    test2 = test_constants_updated()
-    
-    print()
-    print("=" * 60)
-    if test1 and test2:
-        print("✓ All tests PASSED!")
-        print()
-        print("Background shaders are ready to use.")
-        sys.exit(0)
-    else:
-        print("✗ Some tests FAILED!")
-        sys.exit(1)
+    def test_background_type_has_valid_value(self):
+        from src.utils.constants import BACKGROUND_TYPE
+        valid_values = {'starfield', 'plasma', 'waves', 'retrowave', 'retro', 'solid'}
+        self.assertIn(BACKGROUND_TYPE, valid_values)
+
+
+if __name__ == '__main__':
+    unittest.main()
