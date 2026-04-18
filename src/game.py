@@ -309,10 +309,7 @@ class Game:
                     self.audio_manager.adjust_sfx_volume(0.1)
                 elif event.key == pygame.K_EQUALS:
                     # Toggle scanlines post-processing effect
-                    enabled = self.renderer.toggle_scanlines()
-                    # Update options manager to reflect the change
-                    new_effect = "scanlines" if enabled else "none"
-                    self.options_manager.set_post_effect(new_effect)
+                    self.renderer.toggle_scanlines()
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:

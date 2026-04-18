@@ -103,21 +103,6 @@ class PostProcessor:
         else:
             self.style_effect_enabled = False
             logger.debug("No style effect enabled")
-
-        # Scanlines — always loaded so it can be toggled at runtime with = key
-        self.scanlines_enabled = False
-        self.scanlines_program = shader_manager.load_shader(
-            'scanlines', 'basic.vert', 'scanlines.frag'
-        )
-        if self.scanlines_program:
-            self.scanlines_vao = ctx.simple_vertex_array(
-                self.scanlines_program, self.quad_vbo, 'in_position'
-            )
-            self.scanlines_texture = ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
-            self.scanlines_fbo = ctx.framebuffer(color_attachments=[self.scanlines_texture])
-            logger.debug("Scanlines shader loaded (toggle with = key)")
-        else:
-            self.scanlines_vao = None
             logger.warning("Scanlines shader failed to load")
         
         # Time tracking for animated effects
@@ -201,7 +186,7 @@ class PostProcessor:
             The texture with the style effect applied, or the original if no effect is enabled
         """
         if not self.style_effect_enabled or not self.style_effect_program:
-            return self._apply_scanlines(source_texture)
+            return source_texture
         
         # Render style effect to output framebuffer
         self.style_effect_fbo.use()
@@ -214,38 +199,35 @@ class PostProcessor:
             self.style_effect_program['time'] = self.time
         if 'resolution' in self.style_effect_program:
             self.style_effect_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
+        if 'scanlineThickness' in self.style_effect_program:
+            self.style_effect_program['scanlineThickness'] = float(SCANLINE_THICKNESS)
         
         self.style_effect_vao.render(moderngl.TRIANGLE_STRIP)
 
-        return self._apply_scanlines(self.style_effect_texture)
-
-    def _apply_scanlines(self, source_texture: moderngl.Texture) -> moderngl.Texture:
-        """Apply scanlines on top of source_texture if enabled"""
-        if not self.scanlines_enabled or not self.scanlines_program or not self.scanlines_vao:
-            return source_texture
-
-        self.scanlines_fbo.use()
-        self.ctx.clear(0.0, 0.0, 0.0, 1.0)
-        source_texture.use(0)
-        if 'tex' in self.scanlines_program:
-            self.scanlines_program['tex'] = 0
-        if 'time' in self.scanlines_program:
-            self.scanlines_program['time'] = self.time
-        if 'resolution' in self.scanlines_program:
-            self.scanlines_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
-        if 'scanlineThickness' in self.scanlines_program:
-            self.scanlines_program['scanlineThickness'] = float(SCANLINE_THICKNESS)
-        self.scanlines_vao.render(moderngl.TRIANGLE_STRIP)
-        return self.scanlines_texture
+        return self.style_effect_texture
 
     def toggle_scanlines(self) -> bool:
-        """Toggle scanlines on/off. Returns new state."""
-        if not self.scanlines_program:
-            logger.warning("Scanlines shader not loaded, cannot toggle")
+        """Toggle scanlines on/off by switching POST_EFFECT_TYPE. Returns new state."""
+        from src.utils import constants
+        from src.managers.options_manager import OptionsManager
+        
+        options = OptionsManager.get_instance()
+        current_effect = options.get_post_effect()
+        
+        if current_effect == "scanlines":
+            # Turn off scanlines
+            options.set_post_effect("none")
+            constants.POST_EFFECT_TYPE = "none"
+            self.reload_effect_shader()
+            logger.debug("Scanlines disabled")
             return False
-        self.scanlines_enabled = not self.scanlines_enabled
-        logger.debug("Scanlines %s", "enabled" if self.scanlines_enabled else "disabled")
-        return self.scanlines_enabled
+        else:
+            # Turn on scanlines
+            options.set_post_effect("scanlines")
+            constants.POST_EFFECT_TYPE = "scanlines"
+            self.reload_effect_shader()
+            logger.debug("Scanlines enabled")
+            return True
 
     def reload_effect_shader(self):
         """Reload the post-processing effect shader based on current POST_EFFECT_TYPE setting."""
@@ -289,7 +271,8 @@ class PostProcessor:
             )
             self.style_effect_texture = self.ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
             self.style_effect_fbo = self.ctx.framebuffer(color_attachments=[self.style_effect_texture])
-            logger.debug("Style effect shader reloaded successfully")
+            self.style_effect_enabled = True
+            logger.debug("Style effect shader reloaded successfully (%s)", POST_EFFECT_TYPE)
         else:
             self.style_effect_enabled = False
             logger.debug("No style effect enabled")
