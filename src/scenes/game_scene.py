@@ -18,6 +18,7 @@ from src.scenes.pause_scene import PauseScene
 from src.ai.pong_ai import PongAI
 from src.utils.game_time import GameTime
 from src.utils.impact_effects import ImpactEffectsSystem
+from src.utils.ai_indicator import AIThinkingIndicator
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -82,6 +83,13 @@ class GameScene(Scene):
         
         # Impact effects system
         self.impact_effects = ImpactEffectsSystem()
+        
+        # AI thinking indicator - style varies by difficulty level
+        indicator_style = self._get_ai_indicator_style(ai_difficulty)
+        is_persistent = (ai_difficulty == 'hard')  # Hard mode is always analyzing (adaptive)
+        self.ai_indicator = AIThinkingIndicator(style=indicator_style, persistent=is_persistent)
+        logger.debug("AI indicator style: '%s' (persistent=%s) for difficulty '%s'", 
+                    indicator_style, is_persistent, ai_difficulty)
         
         # Fireworks state
         self.fireworks_timer = 0.0
@@ -165,6 +173,12 @@ class GameScene(Scene):
         
         # Update impact effects
         self.impact_effects.update(dt)
+        
+        # Update AI thinking indicator
+        if self.ai_enabled and self.ai:
+            # Set indicator active when AI is thinking (not reacting)
+            self.ai_indicator.set_active(not self.ai.is_reacting)
+            self.ai_indicator.update(dt)
         
         # Update score animations
         if self.score1_anim_timer > 0:
@@ -350,6 +364,23 @@ class GameScene(Scene):
         
         # Update particles
         self.particles.update(dt)
+    
+    def _get_ai_indicator_style(self, difficulty: str) -> str:
+        """
+        Get the appropriate thinking indicator style for AI difficulty level.
+        
+        Args:
+            difficulty: AI difficulty ('easy', 'normal', 'hard')
+            
+        Returns:
+            Indicator style name
+        """
+        difficulty_styles = {
+            'easy': 'spinner',      # Simple circular animation for basic AI
+            'normal': 'pulse_ring', # Active scanning for moderate AI
+            'hard': 'brainwave'     # Complex neural activity for adaptive AI
+        }
+        return difficulty_styles.get(difficulty, 'spinner')
     
     def _launch_firework(self):
         """Launch a firework at a random location"""
@@ -538,20 +569,54 @@ class GameScene(Scene):
         if self.fireworks:
             self.renderer.render_particles(self.fireworks)
         
-        # Draw AI thinking indicator (if AI is in reaction delay)
-        if self.ai and not self.ai.is_reacting:
-            # Pulsing indicator above AI paddle during reaction delay
-            pulse = 0.5 + 0.5 * math.sin(self.ai.reaction_timer * 10.0)
-            indicator_size = 4 + pulse * 3
-            indicator_alpha = 0.6 + pulse * 0.4
-            indicator_color = (*COLOR_YELLOW[:3], indicator_alpha)
+        # Draw AI thinking indicator (minimum display time ensures visibility)
+        if self.ai_enabled and self.ai_indicator.is_active:
+            indicator_x = self.paddle2.x + self.paddle2.width / 2
+            indicator_y = self.paddle2.y - 20
             
-            self.renderer.draw_circle(
-                self.paddle2.x + self.paddle2.width / 2,
-                self.paddle2.y - 15,
-                indicator_size,
-                indicator_color
-            )
+            # Apply intensity to color (persistent mode uses variable intensity)
+            base_color = COLOR_YELLOW
+            indicator_color = (*base_color[:3], base_color[3] * self.ai_indicator.intensity)
+            
+            if self.ai_indicator.style == "spinner":
+                # Draw spinner particles
+                particles = self.ai_indicator.get_spinner_particles(
+                    indicator_x, indicator_y, indicator_color
+                )
+                for x, y, size, color in particles:
+                    self.renderer.draw_circle(x, y, size, color)
+            
+            elif self.ai_indicator.style == "brainwave":
+                # Draw brainwave line
+                points = self.ai_indicator.get_brainwave_points(
+                    indicator_x, indicator_y, indicator_color
+                )
+                # Draw line segments connecting points
+                for i in range(len(points) - 1):
+                    x1, y1 = points[i]
+                    x2, y2 = points[i + 1]
+                    # Draw small circles to form a line
+                    steps = 3
+                    for step in range(steps + 1):
+                        t = step / steps
+                        x = x1 + (x2 - x1) * t
+                        y = y1 + (y2 - y1) * t
+                        self.renderer.draw_circle(x, y, 1.5, indicator_color)
+            
+            elif self.ai_indicator.style == "pulse_ring":
+                # Draw pulsing rings
+                rings = self.ai_indicator.get_pulse_rings(
+                    indicator_x, indicator_y, indicator_color
+                )
+                for x, y, radius, alpha in rings:
+                    ring_color = (*indicator_color[:3], alpha * self.ai_indicator.intensity)
+                    # Draw ring as small circles around circumference
+                    num_points = 16
+                    for i in range(num_points):
+                        angle = (i / num_points) * math.pi * 2
+                        px = x + math.cos(angle) * radius
+                        py = y + math.sin(angle) * radius
+                        self.renderer.draw_circle(px, py, 1.5, ring_color)
         
         # Draw scores with animation
         score_y = 50
