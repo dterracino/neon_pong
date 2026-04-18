@@ -17,6 +17,7 @@ from src.entities.enhanced_particles import EnhancedParticleSystem
 from src.scenes.pause_scene import PauseScene
 from src.ai.pong_ai import PongAI
 from src.utils.game_time import GameTime
+from src.utils.impact_effects import ImpactEffectsSystem
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -79,6 +80,9 @@ class GameScene(Scene):
         self.particles = ParticleSystem()  # For ball impacts
         self.fireworks = EnhancedParticleSystem()  # For victory celebration
         
+        # Impact effects system
+        self.impact_effects = ImpactEffectsSystem()
+        
         # Fireworks state
         self.fireworks_timer = 0.0
         self.next_firework_time = 0.0
@@ -89,6 +93,12 @@ class GameScene(Scene):
         # Score
         self.score1 = 0
         self.score2 = 0
+        
+        # Score animation state
+        self.score1_scale = 1.0
+        self.score1_anim_timer = 0.0
+        self.score2_scale = 1.0
+        self.score2_anim_timer = 0.0
         
         # Game state
         self.game_over = False
@@ -153,51 +163,144 @@ class GameScene(Scene):
         # Update ball
         collision = self.ball.update(dt)
         
+        # Update impact effects
+        self.impact_effects.update(dt)
+        
+        # Update score animations
+        if self.score1_anim_timer > 0:
+            self.score1_anim_timer -= dt
+            # Elastic ease out: scale from 1.5 to 1.0
+            progress = 1.0 - (self.score1_anim_timer / 0.3)  # 0.3s animation
+            self.score1_scale = 1.0 + 0.5 * (1.0 - progress) ** 2
+        else:
+            self.score1_scale = 1.0
+        
+        if self.score2_anim_timer > 0:
+            self.score2_anim_timer -= dt
+            progress = 1.0 - (self.score2_anim_timer / 0.3)
+            self.score2_scale = 1.0 + 0.5 * (1.0 - progress) ** 2
+        else:
+            self.score2_scale = 1.0
+        
         # Handle wall collision
         if collision == 'wall':
             self.audio_manager.play_sound('wall_hit')
+            ball_center_x = self.ball.x + self.ball.size / 2
+            ball_center_y = self.ball.y + self.ball.size / 2
+            
+            # Particles
             self.particles.emit(
-                self.ball.x + self.ball.size / 2,
-                self.ball.y + self.ball.size / 2,
+                ball_center_x, ball_center_y,
                 COLOR_YELLOW,
                 PARTICLE_COUNT,
                 PARTICLE_LIFETIME
             )
+            
+            # Screen shake (light)
+            self.renderer.add_screen_shake(3.0, 0.15)
+            
+            # Impact flash
+            self.impact_effects.add_flash(ball_center_x, ball_center_y, COLOR_YELLOW, size=20, duration=0.1)
         
         # Check paddle collisions
         if self.ball.bounds.intersects(self.paddle1.bounds):
+            self.ball.last_hit_by = 1  # Track player 1 hit
             self.ball.bounce_paddle(self.paddle1)
             self.paddle1.on_hit()
             self.audio_manager.play_sound('paddle_hit', pitch_variation=True)
+            
+            ball_center_x = self.ball.x + self.ball.size / 2
+            ball_center_y = self.ball.y + self.ball.size / 2
+            
+            # Particles
             self.particles.emit(
-                self.ball.x + self.ball.size / 2,
-                self.ball.y + self.ball.size / 2,
+                ball_center_x, ball_center_y,
                 COLOR_CYAN,
                 PARTICLE_COUNT,
                 PARTICLE_LIFETIME
             )
+            
+            # Screen shake (based on ball speed)
+            shake_intensity = min(self.ball.speed / 100.0, 12.0)
+            self.renderer.add_screen_shake(shake_intensity, 0.2)
+            
+            # Impact ring
+            self.impact_effects.add_ring(ball_center_x, ball_center_y, COLOR_CYAN, max_radius=40, duration=0.3)
+            
             self._on_paddle_hit()
         
         if self.ball.bounds.intersects(self.paddle2.bounds):
+            self.ball.last_hit_by = 2  # Track player 2 hit
             self.ball.bounce_paddle(self.paddle2)
             self.paddle2.on_hit()
             self.audio_manager.play_sound('paddle_hit', pitch_variation=True)
+            
+            ball_center_x = self.ball.x + self.ball.size / 2
+            ball_center_y = self.ball.y + self.ball.size / 2
+            
+            # Particles
             self.particles.emit(
-                self.ball.x + self.ball.size / 2,
-                self.ball.y + self.ball.size / 2,
+                ball_center_x, ball_center_y,
                 COLOR_PINK,
                 PARTICLE_COUNT,
                 PARTICLE_LIFETIME
             )
+            
+            # Screen shake (based on ball speed)
+            shake_intensity = min(self.ball.speed / 100.0, 12.0)
+            self.renderer.add_screen_shake(shake_intensity, 0.2)
+            
+            # Impact ring
+            self.impact_effects.add_ring(ball_center_x, ball_center_y, COLOR_PINK, max_radius=40, duration=0.3)
+            
             self._on_paddle_hit()
         
         # Check scoring
         scorer = self.ball.is_out_of_bounds()
         if scorer:
+            # Determine scoring side position for effects
             if scorer == 1:
+                # Player 1 scored (ball went out on right)
+                score_x = WINDOW_WIDTH - 50
+                score_y = self.ball.y + self.ball.size / 2
+                score_color = COLOR_CYAN
                 self.score1 += 1
+                # Trigger score animation
+                self.score1_scale = 1.5
+                self.score1_anim_timer = 0.3
+                
+                # In 1P mode, player scored - add particles
+                # In 2P mode, player 1 scored - add particles
+                self.particles.emit(
+                    score_x, score_y,
+                    score_color,
+                    count=30,
+                    lifetime=1.0
+                )
+                self.impact_effects.add_ring(score_x, score_y, score_color, max_radius=80, duration=0.6)
+                
             else:
+                # Player 2/AI scored (ball went out on left)
+                score_x = 50
+                score_y = self.ball.y + self.ball.size / 2
+                score_color = COLOR_PINK
                 self.score2 += 1
+                # Trigger score animation
+                self.score2_scale = 1.5
+                self.score2_anim_timer = 0.3
+                
+                if self.ai_enabled:
+                    # 1P mode: AI scored, add dramatic screen shake instead of particles
+                    self.renderer.add_screen_shake(15.0, 0.4)
+                else:
+                    # 2P mode: player 2 scored, add particles
+                    self.particles.emit(
+                        score_x, score_y,
+                        score_color,
+                        count=30,
+                        lifetime=1.0
+                    )
+                    self.impact_effects.add_ring(score_x, score_y, score_color, max_radius=80, duration=0.6)
 
             # Achievement: first point ever scored
             self._check_score_achievements(scorer)
@@ -392,10 +495,15 @@ class GameScene(Scene):
                 self.paddle2.get_color()
             )
         
-        # Draw ball trail
+        # Draw ball trail with dynamic color based on who last hit it
         for i, (x, y) in enumerate(self.ball.trail_positions):
+            # Calculate alpha based on position in trail
             alpha = (i + 1) / len(self.ball.trail_positions) * 0.5
-            color = (*self.ball.color[:3], alpha)
+            
+            # Get color from ball (interpolates based on last_hit_by and speed)
+            color = self.ball.get_trail_color(alpha)
+            
+            # Size grows along trail
             size = self.ball.size * (i + 1) / len(self.ball.trail_positions)
             self.renderer.draw_circle(x, y, size / 2, color)
         
@@ -423,6 +531,9 @@ class GameScene(Scene):
             color = (*particle.color[:3], alpha)
             self.renderer.draw_circle(particle.x, particle.y, particle.size / 2, color)
         
+        # Draw impact effects (rings and flashes)
+        self.impact_effects.render(self.renderer)
+        
         # Draw fireworks particles
         if self.fireworks:
             self.renderer.render_particles(self.fireworks)
@@ -442,14 +553,19 @@ class GameScene(Scene):
                 indicator_color
             )
         
-        # Draw scores
+        # Draw scores with animation
         score_y = 50
         score_effects = TextEffects(
-            stroke_width=5,
+            stroke_width=3.0,  # Surface-level outline (no atlas artifacts)
             stroke_color=(0.0, 0.0, 0.0, 1.0)
         )
-        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, FONT_SIZE_LARGE, COLOR_CYAN, centered=True, effects=score_effects)
-        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True, effects=score_effects)
+        
+        # Apply scale to font size for animation
+        score1_size = int(FONT_SIZE_LARGE * self.score1_scale)
+        score2_size = int(FONT_SIZE_LARGE * self.score2_scale)
+        
+        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, score1_size, COLOR_CYAN, centered=True, effects=score_effects)
+        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, score2_size, COLOR_PINK, centered=True, effects=score_effects)
         
         # Draw game over message
         if self.game_over:

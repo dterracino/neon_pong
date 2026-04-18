@@ -44,6 +44,16 @@ class MenuScene(Scene):
             "Quit"
         ]
         
+        # Animation state
+        self.slide_in_timer = 0.0  # Tracks slide-in animation
+        self.slide_in_duration = 0.5  # Duration of slide-in in seconds
+        self.slide_out_timer = 0.0  # Tracks slide-out animation when quitting
+        self.slide_out_duration = 0.5  # Duration of slide-out
+        self.is_quitting = False  # True when quit selected and animating out
+        self.pulse_timer = 0.0  # For pulsing selected item
+        self.menu_item_offsets = [0.0] * len(self.options)  # X offset for each item
+        self.menu_item_scales = [1.0] * len(self.options)  # Scale for each item
+        
         # Create enhanced particle system for menu effects
         self.menu_particles = EnhancedParticleSystem()
         
@@ -155,12 +165,60 @@ class MenuScene(Scene):
             self.scene_manager.push_scene(options_scene)
             logger.debug("Options screen opened")
         elif self.selected_option == 3:  # Quit
-            logger.debug("Clearing scenes (quit)")
-            self.scene_manager.clear_scenes()
+            logger.debug("Starting quit animation")
+            self.is_quitting = True
+            self.slide_out_timer = 0.0
     
     def update(self, dt: float):
         # Update particle system
         self.menu_particles.update(dt)
+
+        # Handle quit animation
+        if self.is_quitting:
+            self.slide_out_timer = min(self.slide_out_timer + dt, self.slide_out_duration)
+            
+            # Calculate slide-out progress with easing (ease-in cubic)
+            progress = self.slide_out_timer / self.slide_out_duration
+            eased_progress = progress ** 3
+            
+            # Slide items back out the way they came
+            for i in range(len(self.options)):
+                direction = 1 if i % 2 == 0 else -1  # Even to left, odd to right
+                self.menu_item_offsets[i] = eased_progress * direction * 800
+            
+            # When animation complete, quit
+            if self.slide_out_timer >= self.slide_out_duration:
+                logger.debug("Slide-out complete, clearing scenes")
+                self.scene_manager.clear_scenes()
+            return  # Skip other updates during quit animation
+
+        # Update slide-in animation
+        if self.slide_in_timer < self.slide_in_duration:
+            self.slide_in_timer = min(self.slide_in_timer + dt, self.slide_in_duration)
+            
+            # Calculate slide progress with easing (ease-out cubic)
+            progress = self.slide_in_timer / self.slide_in_duration
+            eased_progress = 1.0 - (1.0 - progress) ** 3
+            
+            # Alternate items slide from left and right
+            for i in range(len(self.options)):
+                direction = 1 if i % 2 == 0 else -1  # Even from left, odd from right
+                self.menu_item_offsets[i] = (1.0 - eased_progress) * direction * 800
+        
+        # Update pulse animation for selected item
+        self.pulse_timer += dt
+        pulse_speed = 3.0
+        pulse_amount = 0.1
+        
+        for i in range(len(self.options)):
+            if i == self.selected_option:
+                # Selected item pulses
+                pulse = 1.0 + math.sin(self.pulse_timer * pulse_speed) * pulse_amount
+                self.menu_item_scales[i] = pulse
+            else:
+                # Non-selected items shrink back to normal
+                if self.menu_item_scales[i] > 1.0:
+                    self.menu_item_scales[i] = max(1.0, self.menu_item_scales[i] - dt * 3.0)
 
         # Update glow emitter position to follow selected option
         option_y_base = 350
@@ -253,12 +311,20 @@ class MenuScene(Scene):
         self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, FONT_SIZE_LARGE, COLOR_PINK,
                                 font_name="AnkhSanctuary.ttf", centered=True, effects=title_effects)
         
-        # Draw menu options
+        # Draw menu options with animations
         option_y = 350
         for i, option in enumerate(self.options):
             color = COLOR_YELLOW if i == self.selected_option else COLOR_CYAN
             y = option_y + i * 80
-            self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, FONT_SIZE_MEDIUM, color, centered=True)
+            
+            # Apply slide-in offset
+            x = WINDOW_WIDTH // 2 + self.menu_item_offsets[i]
+            
+            # Apply scale animation (selected item pulses)
+            scale = self.menu_item_scales[i]
+            font_size = int(FONT_SIZE_MEDIUM * scale)
+            
+            self.renderer.draw_text(option, x, y, font_size, color, centered=True)
         
         # Draw controls
         controls_y = 550

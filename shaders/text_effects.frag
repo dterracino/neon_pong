@@ -78,11 +78,13 @@ void main() {
         // Get stroke mask by sampling surrounding area
         float strokeMask = getStroke(tex, uv, texelSize, v_stroke_width);
         
-        // Create stroke layer (background)
-        vec4 strokeLayer = vec4(v_stroke_color.rgb, strokeMask * v_stroke_color.a);
+        // Only show stroke where we found nearby text but not at current pixel
+        // This prevents artifacts from texture atlas bleeding
+        float strokeAlpha = max(0.0, strokeMask - texColor.a) * v_stroke_color.a;
+        vec4 strokeLayer = vec4(v_stroke_color.rgb, strokeAlpha);
         
         // Blend text on top of stroke
-        fragColor = mix(strokeLayer, finalColor, texColor.a);
+        fragColor = mix(strokeLayer, finalColor, finalColor.a);
     } else {
         // No stroke, just use the text color
         fragColor = finalColor;

@@ -6,7 +6,8 @@ import math
 import pygame
 from src.utils.constants import (
     BALL_SIZE, BALL_SPEED_INITIAL, BALL_SPEED_INCREMENT,
-    BALL_MAX_SPEED, WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_YELLOW
+    BALL_MAX_SPEED, WINDOW_WIDTH, WINDOW_HEIGHT, 
+    COLOR_YELLOW, COLOR_CYAN, COLOR_PINK
 )
 from src.utils.collision import AABB
 
@@ -25,6 +26,7 @@ class Ball:
         self.velocity_y = 0.0
         self.color = COLOR_YELLOW
         self.trail_positions: list[tuple[float, float]] = []
+        self.last_hit_by: int = 0  # 0=neutral, 1=player1, 2=player2
         
         # Sprite support (optional)
         self.sprite: pygame.Surface | None = None
@@ -42,6 +44,7 @@ class Ball:
         self.y = self.start_y
         self.speed = BALL_SPEED_INITIAL
         self.trail_positions.clear()
+        self.last_hit_by = 0  # Reset to neutral
         
         # Random angle between -45 and 45 degrees, going left or right
         angle = random.uniform(-math.pi/4, math.pi/4)
@@ -56,9 +59,13 @@ class Ball:
         self.x += self.velocity_x * dt
         self.y += self.velocity_y * dt
         
+        # Dynamic trail length based on speed (5 to 20 positions)
+        speed_ratio = self.speed / BALL_MAX_SPEED
+        max_trail_length = int(5 + speed_ratio * 15)  # 5 to 20
+        
         # Store trail position
         self.trail_positions.append((self.x + self.size/2, self.y + self.size/2))
-        if len(self.trail_positions) > 10:
+        if len(self.trail_positions) > max_trail_length:
             self.trail_positions.pop(0)
         
         # Bounce off top and bottom walls
@@ -132,3 +139,32 @@ class Ball:
             sprite: pygame Surface to use as sprite, or None to use default circle
         """
         self.sprite = sprite
+    
+    def get_trail_color(self, alpha: float) -> tuple[float, float, float, float]:
+        """Get trail color based on who last hit the ball and speed.
+        
+        Args:
+            alpha: Base alpha value for the trail particle
+            
+        Returns:
+            RGBA color tuple
+        """
+        # Interpolate between cyan (player 1) and pink (player 2)
+        if self.last_hit_by == 1:
+            base_color = COLOR_CYAN
+        elif self.last_hit_by == 2:
+            base_color = COLOR_PINK
+        else:
+            # Neutral - use yellow
+            base_color = COLOR_YELLOW
+        
+        # Brighten at higher speeds
+        speed_ratio = self.speed / BALL_MAX_SPEED
+        brightness = 0.7 + speed_ratio * 0.3  # 0.7 to 1.0
+        
+        return (
+            base_color[0] * brightness,
+            base_color[1] * brightness,
+            base_color[2] * brightness,
+            alpha
+        )

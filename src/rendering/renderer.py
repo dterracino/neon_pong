@@ -11,6 +11,7 @@ from src.managers.shader_manager import ShaderManager
 from src.rendering.post_process import PostProcessor
 from src.managers.asset_manager import AssetManager
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BACKGROUND_TYPE
+from src.utils.screen_shake import ScreenShake
 
 logger = logging.getLogger(__name__)
 
@@ -202,16 +203,30 @@ class Renderer:
         self.max_cache_size = 100  # Maximum number of cached text items
         self.cache_access_count: Dict[tuple, int] = {}  # Track access frequency
 
+        # Screen shake system
+        self.screen_shake = ScreenShake()
+
         logger.debug("Renderer initialization complete")
 
     def update_time(self, dt: float):
         """Update time for animated backgrounds and post-processing effects"""
         self.time += dt
         self.post_processor.update_time(dt)
+        self.screen_shake.update(dt)
 
     def toggle_scanlines(self) -> bool:
         """Toggle scanlines post-processing on/off. Returns new state."""
         return self.post_processor.toggle_scanlines()
+    
+    def add_screen_shake(self, intensity: float, duration: float = 0.3):
+        """
+        Add screen shake effect.
+        
+        Args:
+            intensity: Shake strength in pixels (recommended: 5-15)
+            duration: Duration in seconds (default: 0.3)
+        """
+        self.screen_shake.add_shake(intensity, duration)
 
     def reload_background_shader(self):
         """Reload the background shader based on current BACKGROUND_TYPE setting."""
@@ -371,6 +386,11 @@ class Renderer:
 
     def draw_rect(self, x: float, y: float, width: float, height: float, color: Tuple[float, float, float, float]):
         """Draw a filled rectangle"""
+        # Apply screen shake offset
+        shake_x, shake_y = self.screen_shake.get_offset()
+        x += shake_x
+        y += shake_y
+        
         # This remains an immediate-mode draw call for simplicity
         ndc_x = (x / WINDOW_WIDTH) * 2 - 1
         ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
@@ -398,6 +418,11 @@ class Renderer:
 
     def draw_circle(self, x: float, y: float, radius: float, color: Tuple[float, float, float, float], segments: int = 32):
         """Draw a filled circle"""
+        # Apply screen shake offset
+        shake_x, shake_y = self.screen_shake.get_offset()
+        x += shake_x
+        y += shake_y
+        
         # This remains an immediate-mode draw call for simplicity
         ndc_x = (x / WINDOW_WIDTH) * 2 - 1
         ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
@@ -437,6 +462,11 @@ class Renderer:
             height: Height to render (None = use sprite height)
             color: Color tint (RGBA 0-1 range, default white = no tint)
         """
+        # Apply screen shake offset
+        shake_x, shake_y = self.screen_shake.get_offset()
+        x += shake_x
+        y += shake_y
+        
         # Use sprite dimensions if not specified
         if width is None:
             width = sprite.get_width()
@@ -594,8 +624,10 @@ class Renderer:
         max_height = 0
         
         for call in batch:
-            # Create cache key from text properties
-            cache_key = (call.text, call.size, call.pygame_color, call.font_name)
+            # Include stroke info in cache key
+            effects = call.effects or TextEffects()
+            stroke_info = (effects.stroke_width, effects.stroke_color) if effects.stroke_width > 0 else (0, (0, 0, 0, 0))
+            cache_key = (call.text, call.size, call.pygame_color, call.font_name, stroke_info)
             
             # Track cache access for LRU management
             self.cache_access_count[cache_key] = self.cache_access_count.get(cache_key, 0) + 1
@@ -606,7 +638,36 @@ class Renderer:
             else:
                 # Render new surface and cache it
                 font = self.asset_manager.get_font(call.font_name, call.size)
-                surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+                
+                # If stroke requested, create outlined text at surface level
+                if effects.stroke_width > 0:
+                    # Render base text
+                    base_surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+                    
+                    # Create stroke surface with padding
+                    stroke_width = int(effects.stroke_width)
+                    padding = stroke_width * 2
+                    surface = pygame.Surface(
+                        (base_surface.get_width() + padding, base_surface.get_height() + padding),
+                        pygame.SRCALPHA
+                    )
+                    
+                    # Convert stroke color from normalized to 0-255
+                    stroke_color = tuple(int(c * 255) for c in effects.stroke_color[:3])
+                    
+                    # Render stroke by drawing text multiple times in a circle
+                    stroke_surface = font.render(call.text, True, stroke_color).convert_alpha()
+                    for angle in range(0, 360, 45):  # 8 directions
+                        import math
+                        offset_x = stroke_width + int(math.cos(math.radians(angle)) * stroke_width)
+                        offset_y = stroke_width + int(math.sin(math.radians(angle)) * stroke_width)
+                        surface.blit(stroke_surface, (offset_x, offset_y))
+                    
+                    # Draw main text on top
+                    surface.blit(base_surface, (stroke_width, stroke_width))
+                else:
+                    surface = font.render(call.text, True, call.pygame_color).convert_alpha()
+                
                 self.text_surface_cache[cache_key] = surface
             
             rendered_surfaces.append(surface)
@@ -644,8 +705,13 @@ class Renderer:
             if call.centered:
                 draw_x -= surface.get_width() / 2
             
+            # Apply screen shake offset
+            shake_x, shake_y = self.screen_shake.get_offset()
+            draw_x += shake_x
+            draw_y = call.y + shake_y
+            
             ndc_x = (draw_x / WINDOW_WIDTH) * 2 - 1
-            ndc_y = 1 - (call.y / WINDOW_HEIGHT) * 2
+            ndc_y = 1 - (draw_y / WINDOW_HEIGHT) * 2
             ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
             ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
             
@@ -653,9 +719,10 @@ class Renderer:
             effects = call.effects or TextEffects()
             
             # Pack effect data for this text (same for all 6 vertices of the quad)
+            # Note: stroke_width set to 0 because we handle strokes at surface level to avoid atlas artifacts
             effect_data = [
                 *call.color,  # color (4 floats)
-                effects.stroke_width,  # stroke_width (1 float)
+                0.0,  # stroke_width (1 float) - always 0, handled at surface level
                 *effects.stroke_color,  # stroke_color (4 floats)
                 *effects.shadow_offset,  # shadow_offset (2 floats)
                 effects.shadow_blur,  # shadow_blur (1 float)
