@@ -17,11 +17,25 @@ in vec4 v_gradient_bottom;
 
 out vec4 fragColor;
 
-// SDF-based stroke effect
-float getStroke(float alpha, float strokeW) {
-    // Simple stroke by thickening alpha channel
-    float stroke = smoothstep(0.5 - strokeW, 0.5, alpha);
-    return stroke;
+// Stroke effect by sampling surrounding pixels
+float getStroke(sampler2D tex, vec2 uv, vec2 texelSize, float strokeW) {
+    if (strokeW <= 0.0) {
+        return 0.0;
+    }
+    
+    // Sample surrounding pixels to create outline
+    float maxAlpha = 0.0;
+    int samples = 12;
+    float radius = strokeW;  // Stroke width in pixels
+    
+    for (int i = 0; i < samples; i++) {
+        float angle = 3.14159265 * 2.0 * float(i) / float(samples);
+        vec2 offset = vec2(cos(angle), sin(angle)) * radius * texelSize;
+        float sampleAlpha = texture(tex, uv + offset).a;
+        maxAlpha = max(maxAlpha, sampleAlpha);
+    }
+    
+    return maxAlpha;
 }
 
 // Soft shadow effect using multiple samples
@@ -48,34 +62,39 @@ float getShadow(sampler2D tex, vec2 uv, vec2 offset, float blur) {
 
 void main() {
     vec4 texColor = texture(tex, uv);
-    vec4 finalColor = texColor * v_color;
     
-    // Apply gradient if enabled
+    // Calculate texel size for proper stroke sampling
+    vec2 texelSize = 1.0 / vec2(textureSize(tex, 0));
+    
+    // Apply gradient if enabled (to the base text color)
+    vec4 finalColor = texColor * v_color;
     if (v_gradient_enabled > 0.5) {
-        // Use the V coordinate (vertical) for gradient
         vec4 gradColor = mix(v_gradient_bottom, v_gradient_top, uv.y);
         finalColor.rgb *= gradColor.rgb;
     }
     
     // Apply stroke effect
     if (v_stroke_width > 0.0) {
-        float strokeMask = getStroke(texColor.a, v_stroke_width * 0.01);
-        float fillMask = texColor.a;
+        // Get stroke mask by sampling surrounding area
+        float strokeMask = getStroke(tex, uv, texelSize, v_stroke_width);
         
-        // Blend stroke and fill
-        vec4 stroke = vec4(v_stroke_color.rgb, strokeMask);
-        finalColor = mix(stroke, finalColor, fillMask);
+        // Create stroke layer (background)
+        vec4 strokeLayer = vec4(v_stroke_color.rgb, strokeMask * v_stroke_color.a);
+        
+        // Blend text on top of stroke
+        fragColor = mix(strokeLayer, finalColor, texColor.a);
+    } else {
+        // No stroke, just use the text color
+        fragColor = finalColor;
     }
     
-    // Apply shadow effect
-    if (length(v_shadow_offset) > 0.0 || v_shadow_blur > 0.0) {
+    // Apply shadow effect (only if no stroke, to keep it simple for now)
+    if (v_stroke_width <= 0.0 && (length(v_shadow_offset) > 0.0 || v_shadow_blur > 0.0)) {
         float shadowMask = getShadow(tex, uv, v_shadow_offset * 0.001, v_shadow_blur * 0.001);
         vec4 shadow = vec4(v_shadow_color.rgb, shadowMask * v_shadow_color.a);
         
         // Blend shadow behind text
-        finalColor.rgb = mix(shadow.rgb, finalColor.rgb, finalColor.a);
-        finalColor.a = max(finalColor.a, shadow.a);
+        fragColor.rgb = mix(shadow.rgb, fragColor.rgb, fragColor.a);
+        fragColor.a = max(fragColor.a, shadow.a);
     }
-    
-    fragColor = finalColor;
 }

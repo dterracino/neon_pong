@@ -39,6 +39,7 @@ BACKGROUND_OPTIONS = [
     "starfield",
     "parallaxstarfield",
     "galaxytrip",
+    "ftl",
     "plasma",
     "waves",
     "retrowave",

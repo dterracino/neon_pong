@@ -6,7 +6,7 @@ import math
 import random
 import pygame
 from src.managers.scene_manager import Scene
-from src.rendering.renderer import Renderer
+from src.rendering.renderer import Renderer, TextEffects
 from src.managers.audio_manager import AudioManager
 from src.managers.options_manager import OptionsManager
 from src.scenes.game_scene import GameScene
@@ -246,8 +246,12 @@ class MenuScene(Scene):
         
         # Draw title
         title_y = 150
+        title_effects = TextEffects(
+            stroke_width=5.0,
+            stroke_color=(0.0, 0.0, 0.0, 1.0)
+        )
         self.renderer.draw_text("NEON PONG", WINDOW_WIDTH // 2, title_y, FONT_SIZE_LARGE, COLOR_PINK,
-                                font_name="AnkhSanctuary.ttf", centered=True)
+                                font_name="AnkhSanctuary.ttf", centered=True, effects=title_effects)
         
         # Draw menu options
         option_y = 350

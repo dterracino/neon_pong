@@ -241,6 +241,10 @@ class Renderer:
             self.background_program = self.shader_manager.load_shader(
                 'background_galaxytrip', 'basic.vert', 'background_galaxytrip.frag'
             )
+        elif BACKGROUND_TYPE == "ftl":
+            self.background_program = self.shader_manager.load_shader(
+                'background_ftl', 'basic.vert', 'background_ftl.frag'
+            )
         elif BACKGROUND_TYPE == "plasma":
             self.background_program = self.shader_manager.load_shader(
                 'background_plasma', 'basic.vert', 'background_plasma.frag'

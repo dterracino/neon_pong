@@ -2,7 +2,7 @@
 """
 Background Shader Demo Application
 Interactive viewer for all background shaders in the Neon Pong game
-Use number keys 1-7 to switch between different shaders
+Use number keys 1-8 to switch between different shaders
 """
 import os
 import sys
@@ -65,6 +65,13 @@ SHADERS = {
         'fragment': 'background_galaxytrip.frag',
         'key': pygame.K_7,
         'description': 'Nebulae clouds with star tunnel and camera rotation'
+    },
+    'ftl': {
+        'name': 'FTL',
+        'vertex': 'basic.vert',
+        'fragment': 'background_ftl.frag',
+        'key': pygame.K_8,
+        'description': 'Faster Than Light warp speed tunnel effect'
     }
 }
 
@@ -143,6 +150,9 @@ class BackgroundShaderDemo:
         print("  3 - Waves")
         print("  4 - Retrowave")
         print("  5 - Retro")
+        print("  6 - Parallax Starfield")
+        print("  7 - Galaxy Trip")
+        print("  8 - FTL")
         print("  H - Show current shader info")
         print("  ESC - Exit")
         print("=" * 80 + "\n")

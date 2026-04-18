@@ -2,12 +2,13 @@
 Main gameplay scene
 """
 import logging
+import math
 import pygame
 import random
 import time
 from typing import Optional
 from src.managers.scene_manager import Scene
-from src.rendering.renderer import Renderer
+from src.rendering.renderer import Renderer, TextEffects
 from src.managers.audio_manager import AudioManager
 from src.entities.paddle import Paddle
 from src.entities.ball import Ball
@@ -15,6 +16,7 @@ from src.entities.particle import ParticleSystem
 from src.entities.enhanced_particles import EnhancedParticleSystem
 from src.scenes.pause_scene import PauseScene
 from src.ai.pong_ai import PongAI
+from src.utils.game_time import GameTime
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -81,6 +83,9 @@ class GameScene(Scene):
         self.fireworks_timer = 0.0
         self.next_firework_time = 0.0
         
+        # Game time tracking
+        self.game_time = GameTime()
+        
         # Score
         self.score1 = 0
         self.score2 = 0
@@ -113,6 +118,9 @@ class GameScene(Scene):
                 self.scene_manager.push_scene(pause_scene)
     
     def update(self, dt: float):
+        # Update game time
+        self.game_time.update(dt)
+        
         if self.game_over:
             # Update fireworks during victory screen
             self.fireworks.update(dt)
@@ -323,17 +331,28 @@ class GameScene(Scene):
         # Draw dust overlay (rendered into scene FBO, gets bloom)
         self.renderer.draw_dust_overlay()
 
-        # Draw center line
+        # Draw animated center line with alternating neon colors
         line_segments = 20
         segment_height = WINDOW_HEIGHT / (line_segments * 2)
         for i in range(line_segments):
             y = i * segment_height * 2
+            
+            # Alternate between cyan and pink
+            color_index = (i + int(self.game_time.elapsed * 2)) % 2
+            base_color = COLOR_CYAN if color_index == 0 else COLOR_PINK
+            
+            # Pulsing alpha for shimmer effect
+            pulse = 0.6 + 0.4 * math.sin(self.game_time.elapsed * 3 + i * 0.3)
+            
+            # Use bright colors (will trigger bloom effect)
+            color = (base_color[0] * pulse, base_color[1] * pulse, base_color[2] * pulse, 0.9)
+            
             self.renderer.draw_rect(
-                WINDOW_WIDTH // 2 - 2,
+                WINDOW_WIDTH // 2 - 3,
                 y,
-                4,
+                6,
                 segment_height,
-                (0.5, 0.5, 0.5, 0.5)
+                color
             )
         
         # Draw paddles
@@ -411,7 +430,6 @@ class GameScene(Scene):
         # Draw AI thinking indicator (if AI is in reaction delay)
         if self.ai and not self.ai.is_reacting:
             # Pulsing indicator above AI paddle during reaction delay
-            import math
             pulse = 0.5 + 0.5 * math.sin(self.ai.reaction_timer * 10.0)
             indicator_size = 4 + pulse * 3
             indicator_alpha = 0.6 + pulse * 0.4
@@ -426,8 +444,12 @@ class GameScene(Scene):
         
         # Draw scores
         score_y = 50
-        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, FONT_SIZE_LARGE, COLOR_CYAN, centered=True)
-        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True)
+        score_effects = TextEffects(
+            stroke_width=5,
+            stroke_color=(0.0, 0.0, 0.0, 1.0)
+        )
+        self.renderer.draw_text(str(self.score1), WINDOW_WIDTH // 4, score_y, FONT_SIZE_LARGE, COLOR_CYAN, centered=True, effects=score_effects)
+        self.renderer.draw_text(str(self.score2), WINDOW_WIDTH * 3 // 4, score_y, FONT_SIZE_LARGE, COLOR_PINK, centered=True, effects=score_effects)
         
         # Draw game over message
         if self.game_over:
