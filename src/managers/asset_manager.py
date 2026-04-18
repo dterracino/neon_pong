@@ -102,6 +102,9 @@ class AssetManager:
         Supports three sources:
           - None / omitted        → DEFAULT_FONT from constants
           - "sys:arial"           → pygame system font (prefix with "sys:")
+          - "sys:arial bold"      → system font with bold weight
+          - "sys:arial italic"    → system font with italic style
+          - "sys:arial bold italic" → system font with both
           - "MyFont.ttf"          → file in assets/fonts/
         """
         from src.utils.constants import DEFAULT_FONT
@@ -112,12 +115,36 @@ class AssetManager:
             try:
                 if resolved_name.startswith("sys:"):
                     sys_name = resolved_name[4:]
-                    font = pygame.font.SysFont(sys_name, size)
+                    
+                    # Parse bold/italic keywords
+                    bold = False
+                    italic = False
+                    parts = sys_name.lower().split()
+                    
+                    if 'bold' in parts:
+                        bold = True
+                        parts.remove('bold')
+                    if 'italic' in parts:
+                        italic = True
+                        parts.remove('italic')
+                    
+                    # Remaining parts are the font name
+                    font_name = ' '.join(parts)
+                    
+                    font = pygame.font.SysFont(font_name, size, bold=bold, italic=italic)
                     if font is None:
                         logger.warning("System font '%s' not found, falling back to pygame default", sys_name)
                         font = pygame.font.Font(None, size)
                     else:
-                        logger.debug("Loaded system font '%s' at size %d", sys_name, size)
+                        style_str = ""
+                        if bold or italic:
+                            styles = []
+                            if bold:
+                                styles.append("bold")
+                            if italic:
+                                styles.append("italic")
+                            style_str = f" ({', '.join(styles)})"
+                        logger.debug("Loaded system font '%s'%s at size %d", font_name, style_str, size)
                     self.fonts[key] = font
                 else:
                     font_path = os.path.join(self.fonts_path, resolved_name)

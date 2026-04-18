@@ -8,6 +8,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 SHADER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shaders')
 BACKGROUND_SHADERS = [
     'background_starfield',
+    'background_parallaxstarfield',
+    'background_galaxytrip',
     'background_plasma',
     'background_waves',
     'background_retrowave',
@@ -57,7 +59,7 @@ class TestBackgroundConstants(unittest.TestCase):
 
     def test_background_type_has_valid_value(self):
         from src.utils.constants import BACKGROUND_TYPE
-        valid_values = {'starfield', 'plasma', 'waves', 'retrowave', 'retro', 'solid'}
+        valid_values = ('starfield', 'parallaxstarfield', 'galaxytrip', 'plasma', 'waves', 'retrowave', 'retro', 'solid')
         self.assertIn(BACKGROUND_TYPE, valid_values)
 
 

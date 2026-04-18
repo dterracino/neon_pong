@@ -22,6 +22,9 @@ from src.utils.constants import (
 
 logger = logging.getLogger(__name__)
 
+# Font for this scene
+SCENE_FONT = "sys:arial bold"
+
 # Colours for locked / unlocked entries
 _COL_UNLOCKED_NAME = COLOR_YELLOW
 _COL_UNLOCKED_DESC = (0.75, 0.75, 0.75, 1.0)
@@ -130,7 +133,7 @@ class AchievementScene(Scene):
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_F2, pygame.K_ESCAPE):
+            if event.key == pygame.K_ESCAPE:
                 self.scene_manager.pop_scene()
 
     def update(self, dt: float):
@@ -177,7 +180,7 @@ class AchievementScene(Scene):
         self.renderer.draw_text(
             "ACHIEVEMENTS",
             WINDOW_WIDTH // 2, 38,
-            FONT_SIZE_DEFAULT, COLOR_YELLOW, font_name="sys:calibri", centered=True
+            FONT_SIZE_DEFAULT, COLOR_YELLOW, font_name=SCENE_FONT, centered=True
         )
 
         # --- Achievement list ---
@@ -186,9 +189,9 @@ class AchievementScene(Scene):
 
         # --- Footer ---
         self.renderer.draw_text(
-            "Press  F2  or  ESC  to close",
-            WINDOW_WIDTH // 2, WINDOW_HEIGHT - 36,
-            FONT_SIZE_SMALL, COLOR_MINT, font_name="sys:calibri", centered=True
+            "Press ESC to close",
+            WINDOW_WIDTH // 2, WINDOW_HEIGHT - 60,
+            FONT_SIZE_SMALL, COLOR_MINT, font_name=SCENE_FONT, centered=True
         )
 
         self.renderer.end_frame()
@@ -238,19 +241,19 @@ class AchievementScene(Scene):
                 desc_col = _COL_LOCKED_DESC
 
             # Name line
-            display_name = "???" if is_hidden_locked else ach.name
+            display_name = "Hidden Achievement" if is_hidden_locked else ach.name
             self.renderer.draw_text(
                 display_name,
                 x, y,
-                FONT_NAME, name_col, font_name="sys:calibri"
+                FONT_NAME, name_col, font_name=SCENE_FONT
             )
 
             # Description line
-            display_desc = "???" if is_hidden_locked else ach.description
+            display_desc = "Unlock this achievement to view it" if is_hidden_locked else ach.description
             self.renderer.draw_text(
                 display_desc,
                 x, y + FONT_NAME + 4,
-                FONT_DESC, desc_col, font_name="sys:calibri"
+                FONT_DESC, desc_col, font_name=SCENE_FONT
             )
 
             cursor_y = y + FONT_NAME + 4 + FONT_DESC + 6
@@ -270,7 +273,7 @@ class AchievementScene(Scene):
                 self.renderer.draw_text(
                     prog_text,
                     x, cursor_y + BAR_H + 2,
-                    FONT_DATE, desc_col, font_name="sys:calibri"
+                    FONT_DATE, desc_col, font_name=SCENE_FONT
                 )
 
             elif ach.unlocked and ach.unlocked_at:
@@ -278,7 +281,7 @@ class AchievementScene(Scene):
                 self.renderer.draw_text(
                     f"Unlocked: {ach.unlocked_at}",
                     x, cursor_y,
-                    FONT_DATE, (0.45, 0.65, 0.45, 1.0), font_name="sys:calibri"
+                    FONT_DATE, (0.45, 0.65, 0.45, 1.0), font_name=SCENE_FONT
                 )
 
         ctx.disable(moderngl.BLEND)

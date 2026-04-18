@@ -2,7 +2,7 @@
 """
 Background Shader Demo Application
 Interactive viewer for all background shaders in the Neon Pong game
-Use number keys 1-4 to switch between different shaders
+Use number keys 1-7 to switch between different shaders
 """
 import os
 import sys
@@ -51,6 +51,20 @@ SHADERS = {
         'fragment': 'background_retro.frag',
         'key': pygame.K_5,
         'description': 'Synthwave with large striped sun and wireframe mountains'
+    },
+    'parallaxstarfield': {
+        'name': 'Parallax Starfield',
+        'vertex': 'basic.vert',
+        'fragment': 'background_parallaxstarfield.frag',
+        'key': pygame.K_6,
+        'description': 'Voronoi-based starfield with multiple parallax layers'
+    },
+    'galaxytrip': {
+        'name': 'Galaxy Trip',
+        'vertex': 'basic.vert',
+        'fragment': 'background_galaxytrip.frag',
+        'key': pygame.K_7,
+        'description': 'Nebulae clouds with star tunnel and camera rotation'
     }
 }
 

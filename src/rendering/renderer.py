@@ -148,6 +148,14 @@ class Renderer:
             self.background_program = shader_manager.load_shader(
                 'background_starfield', 'basic.vert', 'background_starfield.frag'
             )
+        elif BACKGROUND_TYPE == "parallaxstarfield":
+            self.background_program = shader_manager.load_shader(
+                'background_parallaxstarfield', 'basic.vert', 'background_parallaxstarfield.frag'
+            )
+        elif BACKGROUND_TYPE == "galaxytrip":
+            self.background_program = shader_manager.load_shader(
+                'background_galaxytrip', 'basic.vert', 'background_galaxytrip.frag'
+            )
         elif BACKGROUND_TYPE == "plasma":
             self.background_program = shader_manager.load_shader(
                 'background_plasma', 'basic.vert', 'background_plasma.frag'
@@ -487,8 +495,8 @@ class Renderer:
                                         Use the normalised name from pygame.font.get_fonts()
                                         (lowercase, no spaces/punctuation), e.g.
                                         "sys:arial", "sys:gillsans", "sys:calibri".
-                                        Spaces and casing are accepted but normalised
-                                        by pygame, so "sys:Gill Sans" == "sys:gillsans".
+                                        Add "bold" and/or "italic" keywords for styles:
+                                        "sys:arial bold", "sys:arial italic", "sys:arial bold italic".
             centered: Center text at x position
             effects: Optional TextEffects for stroke, shadow, gradient
             render_before_bloom: If True, renders to scene (with bloom). If False, renders to UI overlay (no bloom)
@@ -655,6 +663,8 @@ class Renderer:
                                         Use the normalised name from pygame.font.get_fonts()
                                         (lowercase, no spaces/punctuation), e.g.
                                         "sys:arial", "sys:gillsans", "sys:calibri".
+                                        Add "bold" and/or "italic" keywords for styles:
+                                        "sys:arial bold", "sys:arial italic", "sys:arial bold italic".
         """
         # Render text to pygame surface
         pygame_color = (

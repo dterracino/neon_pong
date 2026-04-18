@@ -94,7 +94,7 @@ AI_DIFFICULTIES = {
 }
 
 # Background settings
-BACKGROUND_TYPE = "starfield"  # Options: "starfield", "plasma", "waves", "retrowave", "retro", "solid"
+BACKGROUND_TYPE = "starfield"  # Options: "starfield", "parallaxstarfield", "galaxytrip", "plasma", "waves", "retrowave", "retro", "solid"
 
 # Post-processing style effect settings
 POST_EFFECT_TYPE = "none"  # Options: "none", "scanlines", "crt", "vhs"
