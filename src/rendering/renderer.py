@@ -55,6 +55,13 @@ class Renderer:
         self.basic_program = basic_program_maybe
         logger.debug("Basic shader loaded successfully")
 
+        # Load sprite shader
+        logger.debug("Loading sprite shader")
+        sprite_program_maybe = shader_manager.load_shader('sprite', 'sprite.vert', 'sprite.frag')
+        assert sprite_program_maybe is not None, "Failed to load sprite shader!"
+        self.sprite_program = sprite_program_maybe
+        logger.debug("Sprite shader loaded successfully")
+
         # Load text shader
         logger.debug("Loading text shader")
         text_program_maybe = shader_manager.load_shader('text', 'text.vert', 'text.frag')
@@ -350,6 +357,67 @@ class Renderer:
         vao.release()
         vbo.release()
 
+    def draw_sprite(self, sprite: pygame.Surface, x: float, y: float, 
+                    width: Optional[float] = None, height: Optional[float] = None,
+                    color: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0)):
+        """Draw a pygame Surface as a textured sprite
+        
+        Args:
+            sprite: pygame Surface to render
+            x: X position (top-left corner in screen coordinates)
+            y: Y position (top-left corner in screen coordinates)
+            width: Width to render (None = use sprite width)
+            height: Height to render (None = use sprite height)
+            color: Color tint (RGBA 0-1 range, default white = no tint)
+        """
+        # Use sprite dimensions if not specified
+        if width is None:
+            width = sprite.get_width()
+        if height is None:
+            height = sprite.get_height()
+        
+        # Convert to NDC coordinates
+        ndc_x = (x / WINDOW_WIDTH) * 2 - 1
+        ndc_y = 1 - (y / WINDOW_HEIGHT) * 2
+        ndc_width = (width / WINDOW_WIDTH) * 2
+        ndc_height = (height / WINDOW_HEIGHT) * 2
+
+        # Create vertices with UV coordinates
+        vertices = np.array([
+            # pos_x, pos_y, uv_u, uv_v
+            ndc_x,              ndc_y - ndc_height, 0.0, 1.0,  # Bottom-left
+            ndc_x + ndc_width,  ndc_y - ndc_height, 1.0, 1.0,  # Bottom-right
+            ndc_x,              ndc_y,              0.0, 0.0,  # Top-left
+            ndc_x + ndc_width,  ndc_y,              1.0, 0.0,  # Top-right
+        ], dtype='f4')
+
+        # Create texture from pygame surface
+        texture_data = pygame.image.tostring(sprite, 'RGBA', True)
+        texture = self.ctx.texture(
+            (sprite.get_width(), sprite.get_height()),
+            4,  # RGBA components
+            texture_data
+        )
+        texture.filter = (moderngl.NEAREST, moderngl.NEAREST)  # Pixel-perfect for retro look
+
+        # Create VBO and VAO
+        vbo = self.ctx.buffer(vertices.tobytes())
+        vao = self.ctx.vertex_array(
+            self.sprite_program,
+            [(vbo, '2f 2f', 'in_position', 'in_texcoord')]
+        )
+
+        # Render
+        texture.use(0)
+        self.sprite_program['tex'] = 0
+        self.sprite_program['color'] = color
+        vao.render(moderngl.TRIANGLE_STRIP)
+        
+        # Cleanup
+        vao.release()
+        vbo.release()
+        texture.release()
+
     def draw_rounded_rect(self, x: float, y: float, width: float, height: float,
                           radius: float, color: Tuple[float, float, float, float]):
         """Draw a filled rounded rectangle using rects + corner circles"""
@@ -595,8 +663,8 @@ class Renderer:
         font = self.asset_manager.get_font(font_name, size)
         surface = font.render(text, True, pygame_color).convert_alpha()
         
-        # Convert to texture
-        text_data = pygame.image.tostring(surface, 'RGBA')
+        # Convert to texture (flip vertically for OpenGL)
+        text_data = pygame.image.tostring(surface, 'RGBA', True)
         text_texture = self.ctx.texture(surface.get_size(), 4, text_data)
         text_texture.repeat_x = False
         text_texture.repeat_y = False
@@ -608,15 +676,15 @@ class Renderer:
         ndc_w = (surface.get_width() / WINDOW_WIDTH) * 2
         ndc_h = (surface.get_height() / WINDOW_HEIGHT) * 2
         
-        # Create vertices (correct UV orientation - 0,0 is bottom-left in OpenGL)
+        # Create vertices (UV flipped because texture is flipped)
         vertices = np.array([
             # pos.x, pos.y, uv.x, uv.y
-            ndc_x,       ndc_y,       0.0, 0.0,  # Top-left
-            ndc_x,       ndc_y - ndc_h, 0.0, 1.0,  # Bottom-left
-            ndc_x + ndc_w, ndc_y,       1.0, 0.0,  # Top-right
-            ndc_x,       ndc_y - ndc_h, 0.0, 1.0,  # Bottom-left
-            ndc_x + ndc_w, ndc_y - ndc_h, 1.0, 1.0,  # Bottom-right
-            ndc_x + ndc_w, ndc_y,       1.0, 0.0,  # Top-right
+            ndc_x,       ndc_y,       0.0, 1.0,  # Top-left
+            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
+            ndc_x,       ndc_y - ndc_h, 0.0, 0.0,  # Bottom-left
+            ndc_x + ndc_w, ndc_y - ndc_h, 1.0, 0.0,  # Bottom-right
+            ndc_x + ndc_w, ndc_y,       1.0, 1.0,  # Top-right
         ], dtype='f4')
         
         # Create temporary VBO and VAO
@@ -629,7 +697,7 @@ class Renderer:
         # Render
         text_texture.use(0)
         self.text_program['tex'] = 0
-        self.text_program['color'] = (1.0, 1.0, 1.0, 1.0)
+        self.text_program['color'] = (1.0, 1.0, 1.0, color[3])  # Preserve text color, apply alpha
         temp_vao.render(moderngl.TRIANGLES)
         
         # Cleanup

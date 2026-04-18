@@ -31,13 +31,14 @@ class GameScene(Scene):
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
                  ai_enabled: bool = False, ai_difficulty: str = 'normal',
-                 screenshot_manager=None, achievement_manager=None):
+                 screenshot_manager=None, achievement_manager=None, asset_manager=None):
         logger.debug("Creating game scene")
         super().__init__(scene_manager)
         self.renderer = renderer
         self.audio_manager = audio_manager
         self.screenshot_manager = screenshot_manager
         self.achievement_manager = achievement_manager
+        self.asset_manager = asset_manager
         self.ai_enabled = ai_enabled
         self.ai_difficulty = ai_difficulty
         
@@ -46,6 +47,25 @@ class GameScene(Scene):
         self.paddle1 = Paddle(PADDLE_OFFSET, WINDOW_HEIGHT // 2 - 50, 1)
         self.paddle2 = Paddle(WINDOW_WIDTH - PADDLE_OFFSET - 15, WINDOW_HEIGHT // 2 - 50, 2)
         self.ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+        
+        # Load sprites if asset_manager is available
+        if self.asset_manager:
+            # Try to load paddle sprites
+            paddle1_sprite = self.asset_manager.get_image('paddle1')
+            if paddle1_sprite:
+                self.paddle1.set_sprite(paddle1_sprite)
+                logger.debug("Set sprite for paddle 1")
+            
+            paddle2_sprite = self.asset_manager.get_image('paddle2')
+            if paddle2_sprite:
+                self.paddle2.set_sprite(paddle2_sprite)
+                logger.debug("Set sprite for paddle 2")
+            
+            # Try to load ball sprite
+            ball_sprite = self.asset_manager.get_image('ball')
+            if ball_sprite:
+                self.ball.set_sprite(ball_sprite)
+                logger.debug("Set sprite for ball")
         
         # Initialize AI if enabled
         self.ai: Optional[PongAI] = None
@@ -317,21 +337,41 @@ class GameScene(Scene):
             )
         
         # Draw paddles
-        self.renderer.draw_rect(
-            self.paddle1.x,
-            self.paddle1.y,
-            self.paddle1.width,
-            self.paddle1.height,
-            self.paddle1.get_color()
-        )
+        if self.paddle1.sprite:
+            self.renderer.draw_sprite(
+                self.paddle1.sprite,
+                self.paddle1.x,
+                self.paddle1.y,
+                self.paddle1.width,
+                self.paddle1.height,
+                self.paddle1.get_color()
+            )
+        else:
+            self.renderer.draw_rect(
+                self.paddle1.x,
+                self.paddle1.y,
+                self.paddle1.width,
+                self.paddle1.height,
+                self.paddle1.get_color()
+            )
         
-        self.renderer.draw_rect(
-            self.paddle2.x,
-            self.paddle2.y,
-            self.paddle2.width,
-            self.paddle2.height,
-            self.paddle2.get_color()
-        )
+        if self.paddle2.sprite:
+            self.renderer.draw_sprite(
+                self.paddle2.sprite,
+                self.paddle2.x,
+                self.paddle2.y,
+                self.paddle2.width,
+                self.paddle2.height,
+                self.paddle2.get_color()
+            )
+        else:
+            self.renderer.draw_rect(
+                self.paddle2.x,
+                self.paddle2.y,
+                self.paddle2.width,
+                self.paddle2.height,
+                self.paddle2.get_color()
+            )
         
         # Draw ball trail
         for i, (x, y) in enumerate(self.ball.trail_positions):
@@ -341,12 +381,22 @@ class GameScene(Scene):
             self.renderer.draw_circle(x, y, size / 2, color)
         
         # Draw ball
-        self.renderer.draw_circle(
-            self.ball.x + self.ball.size / 2,
-            self.ball.y + self.ball.size / 2,
-            self.ball.size / 2,
-            self.ball.color
-        )
+        if self.ball.sprite:
+            self.renderer.draw_sprite(
+                self.ball.sprite,
+                self.ball.x,
+                self.ball.y,
+                self.ball.size,
+                self.ball.size,
+                self.ball.color
+            )
+        else:
+            self.renderer.draw_circle(
+                self.ball.x + self.ball.size / 2,
+                self.ball.y + self.ball.size / 2,
+                self.ball.size / 2,
+                self.ball.color
+            )
         
         # Draw particles
         for particle in self.particles.particles:

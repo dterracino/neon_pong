@@ -24,6 +24,9 @@ class Paddle:
         # Color based on player
         self.color = COLOR_CYAN if player_num == 1 else COLOR_PINK
         
+        # Sprite support (optional)
+        self.sprite: pygame.Surface | None = None
+        
         # Hit flash effect
         self.hit_flash = 0.0
 
@@ -87,3 +90,11 @@ class Paddle:
             # Brighten color on hit
             return tuple(min(1.0, c + self.hit_flash * 0.5) for c in self.color)
         return self.color
+    
+    def set_sprite(self, sprite: pygame.Surface | None):
+        """Set the paddle sprite image
+        
+        Args:
+            sprite: pygame Surface to use as sprite, or None to use default rectangle
+        """
+        self.sprite = sprite

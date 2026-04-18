@@ -3,6 +3,7 @@ Ball entity
 """
 import random
 import math
+import pygame
 from src.utils.constants import (
     BALL_SIZE, BALL_SPEED_INITIAL, BALL_SPEED_INCREMENT,
     BALL_MAX_SPEED, WINDOW_WIDTH, WINDOW_HEIGHT, COLOR_YELLOW
@@ -24,6 +25,9 @@ class Ball:
         self.velocity_y = 0.0
         self.color = COLOR_YELLOW
         self.trail_positions: list[tuple[float, float]] = []
+        
+        # Sprite support (optional)
+        self.sprite: pygame.Surface | None = None
         
         self.reset()
     
@@ -120,3 +124,11 @@ class Ball:
         elif self.x > WINDOW_WIDTH:
             return 1  # Player 1 scored
         return 0
+    
+    def set_sprite(self, sprite: pygame.Surface | None):
+        """Set the ball sprite image
+        
+        Args:
+            sprite: pygame Surface to use as sprite, or None to use default circle
+        """
+        self.sprite = sprite

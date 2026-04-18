@@ -28,6 +28,7 @@ class AssetManager:
         self._initialized = True
         self.fonts: Dict[tuple, pygame.font.Font] = {}
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.images: Dict[str, pygame.Surface] = {}  # name -> pygame surface
         self.music_files: Dict[str, str] = {}  # name -> filepath
         self.current_music_path: Optional[str] = None  # Currently loaded music file
         self._is_preloading: bool = False  # Flag to indicate if assets are currently being loaded
@@ -38,6 +39,7 @@ class AssetManager:
         self.fonts_path = os.path.join(self.assets_path, 'fonts')
         self.sounds_path = os.path.join(self.assets_path, 'sounds')
         self.music_path = os.path.join(self.assets_path, 'music')
+        self.images_path = os.path.join(self.assets_path, 'images')
         
         logger.debug("Initializing asset manager")
         logger.debug("Base path: %s", self.base_path)
@@ -45,12 +47,14 @@ class AssetManager:
         logger.debug("Fonts path: %s", self.fonts_path)
         logger.debug("Sounds path: %s", self.sounds_path)
         logger.debug("Music path: %s", self.music_path)
+        logger.debug("Images path: %s", self.images_path)
         
         # Create directories if they don't exist
         os.makedirs(self.assets_path, exist_ok=True)
         os.makedirs(self.fonts_path, exist_ok=True)
         os.makedirs(self.sounds_path, exist_ok=True)
         os.makedirs(self.music_path, exist_ok=True)
+        os.makedirs(self.images_path, exist_ok=True)
     
     @staticmethod
     def _normalize_asset_name(filename: str) -> str:
@@ -150,6 +154,69 @@ class AssetManager:
         except Exception as e:
             logger.error("Error loading sound %s: %s", filename, e)
             return None
+    
+    def get_image(self, name: str) -> Optional[pygame.Surface]:
+        """Get a loaded image by name (without extension)"""
+        return self.images.get(self._normalize_asset_name(name))
+    
+    def load_image(self, filename: str) -> Optional[pygame.Surface]:
+        """Load a single image by filename
+        
+        Args:
+            filename: Image filename (e.g., "paddle.png", "ball.png")
+            
+        Returns:
+            Loaded pygame Surface, or None if not found
+        """
+        image_path = os.path.join(self.images_path, filename)
+        
+        if not os.path.exists(image_path):
+            logger.warning("Image not found: %s", image_path)
+            return None
+        
+        try:
+            name = self._normalize_asset_name(filename)
+            image = pygame.image.load(image_path)
+            # Only convert_alpha if display has been initialized
+            if pygame.display.get_surface() is not None:
+                image = image.convert_alpha()
+            self.images[name] = image
+            logger.debug("Loaded image '%s' from %s (%dx%d)", 
+                        name, filename, image.get_width(), image.get_height())
+            return image
+        except Exception as e:
+            logger.error("Error loading image %s: %s", filename, e)
+            return None
+    
+    def preload_images(self) -> int:
+        """Automatically load all image files from the images directory
+        
+        Returns:
+            Number of images loaded
+        """
+        if not os.path.exists(self.images_path):
+            logger.debug("Images path does not exist: %s", self.images_path)
+            return 0
+        
+        image_extensions = ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tga')
+        image_files = [f for f in os.listdir(self.images_path)
+                      if f.lower().endswith(image_extensions)]
+        
+        if not image_files:
+            logger.debug("No image files found in %s", self.images_path)
+            return 0
+        
+        logger.debug("Loading %d image files", len(image_files))
+        loaded = 0
+        for image_file in image_files:
+            try:
+                self.load_image(image_file)
+                loaded += 1
+            except Exception as e:
+                logger.error("Failed to load image %s: %s", image_file, e)
+        
+        logger.debug("Loaded %d images", loaded)
+        return loaded
     
     def get_music_path(self, name: str) -> Optional[str]:
         """Get music file path by name (without extension)"""
@@ -262,7 +329,8 @@ class AssetManager:
         return loaded
     
     def log_loaded_assets(self):
-        logger.info("Currently loaded assets: %d sounds, %d music, %d fonts", len(self.sounds), len(self.music_files), len(self.fonts)) 
+        logger.info("Currently loaded assets: %d sounds, %d music, %d fonts, %d images", 
+                   len(self.sounds), len(self.music_files), len(self.fonts), len(self.images))
         logger.info("--- Loaded Sounds ---")
         for key, value in self.sounds.items():
             logger.info("Sound: %s => <pygame.mixer.Sound object>", key)
@@ -271,7 +339,10 @@ class AssetManager:
             logger.info("Music: %s => %s", key, value)
         logger.info("--- Loaded Fonts ---")
         for key, value in self.fonts.items():
-            logger.info("Font: %s => <pygame.font.Font object>", key)  
+            logger.info("Font: %s => <pygame.font.Font object>", key)
+        logger.info("--- Loaded Images ---")
+        for key, value in self.images.items():
+            logger.info("Image: %s => %dx%d", key, value.get_width(), value.get_height())
         logger.info("Finished logging all assets")
     
     @property
@@ -281,17 +352,17 @@ class AssetManager:
     
     def preload_assets(self, 
                        font_sizes: Optional[list] = None,
-                       on_complete: Optional[Callable[[int, int, int], None]] = None) -> Tuple[int, int, int]:
-        """Preload all assets (sounds, music, fonts)
+                       on_complete: Optional[Callable[[int, int, int, int], None]] = None) -> Tuple[int, int, int, int]:
+        """Preload all assets (sounds, music, fonts, images)
         Args:
             font_sizes: List of font sizes to preload. If None, uses defaults from constants.
-            on_complete: Optional callback(sounds, music, fonts) called when loading completes.
+            on_complete: Optional callback(sounds, music, fonts, images) called when loading completes.
         Returns:
-            Tuple of (sounds_loaded, music_registered, fonts_loaded)
+            Tuple of (sounds_loaded, music_registered, fonts_loaded, images_loaded)
         """
         logger.debug("Starting asset preloading")
         self._is_preloading = True
-        sounds_loaded = music_registered = fonts_loaded = 0
+        sounds_loaded = music_registered = fonts_loaded = images_loaded = 0
         try:
             logger.debug("Loading sounds...")
             sounds_loaded = self.preload_sounds()
@@ -299,15 +370,17 @@ class AssetManager:
             music_registered = self.preload_music()
             logger.debug("Loading fonts...")
             fonts_loaded = self.preload_fonts(sizes=font_sizes)
+            logger.debug("Loading images...")
+            images_loaded = self.preload_images()
             logger.debug("Asset preloading complete")
-            logger.debug("Loaded %d sounds, %d music, %d font combinations", 
-                        sounds_loaded, music_registered, fonts_loaded)
+            logger.debug("Loaded %d sounds, %d music, %d font combinations, %d images", 
+                        sounds_loaded, music_registered, fonts_loaded, images_loaded)
         except Exception as e:
             logger.error("Error during asset preloading: %s", e)
         finally:
             self._is_preloading = False
             if on_complete:
                 logger.debug("Calling on_complete callback")
-                on_complete(sounds_loaded, music_registered, fonts_loaded)
+                on_complete(sounds_loaded, music_registered, fonts_loaded, images_loaded)
 
-        return (sounds_loaded, music_registered, fonts_loaded)
+        return (sounds_loaded, music_registered, fonts_loaded, images_loaded)

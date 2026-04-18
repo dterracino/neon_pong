@@ -105,6 +105,12 @@ class AchievementToast:
         if self._opacity <= 0.0:
             return
 
+        # Enable blending for proper text rendering
+        import moderngl
+        ctx = renderer.ctx
+        ctx.enable(moderngl.BLEND)
+        ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+
         a   = self._opacity
         x   = self._screen_w - _TOAST_W - _MARGIN
         y   = _MARGIN
@@ -153,3 +159,6 @@ class AchievementToast:
             desc_col,
             font_name="sys:arial"
         )
+
+        # Disable blending after rendering
+        ctx.disable(moderngl.BLEND)

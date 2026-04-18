@@ -79,11 +79,11 @@ class Game:
         # Preload all assets
         logger.debug("Preloading assets")
         
-        def on_assets_loaded(sounds: int, music: int, fonts: int):
+        def on_assets_loaded(sounds: int, music: int, fonts: int, images: int):
             """Called when asset loading completes"""
             self.asset_manager.log_loaded_assets()
 
-        sounds, music, fonts = self.asset_manager.preload_assets(on_complete=on_assets_loaded)
+        sounds, music, fonts, images = self.asset_manager.preload_assets(on_complete=on_assets_loaded)
         logger.debug("Assets preloaded successfully")
         
         logger.debug("Initializing shader manager")
@@ -119,7 +119,8 @@ class Game:
         # Start with menu scene
         logger.debug("Creating initial menu scene")
         initial_scene = MenuScene(self.scene_manager, self.renderer, self.audio_manager,
-                                 self.screenshot_manager, self.achievement_manager)
+                                 self.screenshot_manager, self.achievement_manager,
+                                 self.asset_manager)
         logger.debug("Pushing menu scene to scene manager")
         self.scene_manager.push_scene(initial_scene)
         

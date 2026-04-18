@@ -34,7 +34,7 @@ COLOR_MINT = (0.02, 1.0, 0.63, 1.0)      # #05FFA1
 COLOR_DARK_BG = (0.05, 0.02, 0.15, 1.0)  # Dark purple background
 
 # Bloom settings
-BLOOM_THRESHOLD = 0.7
+BLOOM_THRESHOLD = 0.3
 BLOOM_INTENSITY = 1.5
 BLOOM_BLUR_PASSES = 2
 

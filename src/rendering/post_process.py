@@ -4,7 +4,7 @@ Post-processing effects using ModernGL
 import logging
 import moderngl
 from src.managers.shader_manager import ShaderManager
-from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES, POST_EFFECT_TYPE, SCANLINE_THICKNESS
+from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, BLOOM_BLUR_PASSES, BLOOM_THRESHOLD, BLOOM_INTENSITY, POST_EFFECT_TYPE, SCANLINE_THICKNESS
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -137,9 +137,9 @@ class PostProcessor:
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
         source_texture.use(0)
         if self.bloom_extract_program and 'tex' in self.bloom_extract_program:
-            self.bloom_extract_program['tex'].value = 0  # type: ignore[union-attr]
+            self.bloom_extract_program['tex'] = 0
         if self.bloom_extract_program and 'threshold' in self.bloom_extract_program:
-            self.bloom_extract_program['threshold'].value = 0.7  # type: ignore[union-attr]
+            self.bloom_extract_program['threshold'] = BLOOM_THRESHOLD
         self.extract_vao.render(moderngl.TRIANGLE_STRIP)
         
         # Step 2: Blur bright pixels (ping-pong between two buffers)
@@ -152,11 +152,11 @@ class PostProcessor:
             self.ctx.clear(0.0, 0.0, 0.0, 1.0)
             current_source.use(0)
             if self.bloom_blur_program and 'tex' in self.bloom_blur_program:
-                self.bloom_blur_program['tex'].value = 0  # type: ignore[union-attr]
+                self.bloom_blur_program['tex'] = 0
             if self.bloom_blur_program and 'horizontal' in self.bloom_blur_program:
-                self.bloom_blur_program['horizontal'].value = (i % 2 == 0)  # type: ignore[union-attr]
+                self.bloom_blur_program['horizontal'] = (i % 2 == 0)
             if self.bloom_blur_program and 'resolution' in self.bloom_blur_program:
-                self.bloom_blur_program['resolution'].value = (  # type: ignore[union-attr]
+                self.bloom_blur_program['resolution'] = (
                     current_target_texture.width,
                     current_target_texture.height
                 )
@@ -178,11 +178,11 @@ class PostProcessor:
         source_texture.use(0)
         current_source.use(1)
         if self.bloom_combine_program and 'scene' in self.bloom_combine_program:
-            self.bloom_combine_program['scene'].value = 0  # type: ignore[union-attr]
+            self.bloom_combine_program['scene'] = 0
         if self.bloom_combine_program and 'bloom' in self.bloom_combine_program:
-            self.bloom_combine_program['bloom'].value = 1  # type: ignore[union-attr]
+            self.bloom_combine_program['bloom'] = 1
         if self.bloom_combine_program and 'bloom_intensity' in self.bloom_combine_program:
-            self.bloom_combine_program['bloom_intensity'].value = 1.5  # type: ignore[union-attr]
+            self.bloom_combine_program['bloom_intensity'] = BLOOM_INTENSITY
         self.combine_vao.render(moderngl.TRIANGLE_STRIP)
         
         return self.final_texture
@@ -209,11 +209,11 @@ class PostProcessor:
         source_texture.use(0)
         
         if 'tex' in self.style_effect_program:
-            self.style_effect_program['tex'].value = 0  # type: ignore[union-attr]
+            self.style_effect_program['tex'] = 0
         if 'time' in self.style_effect_program:
-            self.style_effect_program['time'].value = self.time  # type: ignore[union-attr]
+            self.style_effect_program['time'] = self.time
         if 'resolution' in self.style_effect_program:
-            self.style_effect_program['resolution'].value = (WINDOW_WIDTH, WINDOW_HEIGHT)  # type: ignore[union-attr]
+            self.style_effect_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
         
         self.style_effect_vao.render(moderngl.TRIANGLE_STRIP)
 
@@ -228,13 +228,13 @@ class PostProcessor:
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
         source_texture.use(0)
         if 'tex' in self.scanlines_program:
-            self.scanlines_program['tex'].value = 0
+            self.scanlines_program['tex'] = 0
         if 'time' in self.scanlines_program:
-            self.scanlines_program['time'].value = self.time
+            self.scanlines_program['time'] = self.time
         if 'resolution' in self.scanlines_program:
-            self.scanlines_program['resolution'].value = (WINDOW_WIDTH, WINDOW_HEIGHT)
+            self.scanlines_program['resolution'] = (WINDOW_WIDTH, WINDOW_HEIGHT)
         if 'scanlineThickness' in self.scanlines_program:
-            self.scanlines_program['scanlineThickness'].value = float(SCANLINE_THICKNESS)
+            self.scanlines_program['scanlineThickness'] = float(SCANLINE_THICKNESS)
         self.scanlines_vao.render(moderngl.TRIANGLE_STRIP)
         return self.scanlines_texture
 
