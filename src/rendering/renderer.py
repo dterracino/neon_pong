@@ -213,6 +213,61 @@ class Renderer:
         """Toggle scanlines post-processing on/off. Returns new state."""
         return self.post_processor.toggle_scanlines()
 
+    def reload_background_shader(self):
+        """Reload the background shader based on current BACKGROUND_TYPE setting."""
+        from src.utils.constants import BACKGROUND_TYPE
+        
+        logger.debug("Reloading background shader (%s)", BACKGROUND_TYPE)
+        
+        # Release old VAO if it exists
+        if hasattr(self, 'background_vao') and self.background_vao:
+            self.background_vao.release()
+            self.background_vao = None
+        
+        # Clear old program reference
+        self.background_program = None
+        self.background_enabled = BACKGROUND_TYPE != "solid"
+        
+        # Load new background shader
+        if BACKGROUND_TYPE == "starfield":
+            self.background_program = self.shader_manager.load_shader(
+                'background_starfield', 'basic.vert', 'background_starfield.frag'
+            )
+        elif BACKGROUND_TYPE == "parallaxstarfield":
+            self.background_program = self.shader_manager.load_shader(
+                'background_parallaxstarfield', 'basic.vert', 'background_parallaxstarfield.frag'
+            )
+        elif BACKGROUND_TYPE == "galaxytrip":
+            self.background_program = self.shader_manager.load_shader(
+                'background_galaxytrip', 'basic.vert', 'background_galaxytrip.frag'
+            )
+        elif BACKGROUND_TYPE == "plasma":
+            self.background_program = self.shader_manager.load_shader(
+                'background_plasma', 'basic.vert', 'background_plasma.frag'
+            )
+        elif BACKGROUND_TYPE == "waves":
+            self.background_program = self.shader_manager.load_shader(
+                'background_waves', 'basic.vert', 'background_waves.frag'
+            )
+        elif BACKGROUND_TYPE == "retrowave":
+            self.background_program = self.shader_manager.load_shader(
+                'background_retrowave', 'basic.vert', 'background_retrowave.frag'
+            )
+        elif BACKGROUND_TYPE == "retro":
+            self.background_program = self.shader_manager.load_shader(
+                'background_retro', 'basic.vert', 'background_retro.frag'
+            )
+        
+        # Create new VAO if we have a program
+        if self.background_program:
+            self.background_vao = self.ctx.simple_vertex_array(
+                self.background_program, self.quad_vbo, 'in_position'
+            )
+            logger.debug("Background shader reloaded successfully")
+        else:
+            self.background_enabled = False
+            logger.debug("Using solid background")
+
     def _manage_text_cache(self):
         """Manage text cache size by removing least frequently used items"""
         if len(self.text_surface_cache) <= self.max_cache_size:

@@ -8,7 +8,9 @@ import pygame
 from src.managers.scene_manager import Scene
 from src.rendering.renderer import Renderer
 from src.managers.audio_manager import AudioManager
+from src.managers.options_manager import OptionsManager
 from src.scenes.game_scene import GameScene
+from src.scenes.options_scene import OptionsScene
 from src.entities.enhanced_particles import EnhancedParticleSystem, EnhancedParticle, MotionPattern
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -36,10 +38,9 @@ class MenuScene(Scene):
         self.selected_option = 0
         self.previous_selection = 0
         self.options = [
-            "1 Player (Easy)",
-            "1 Player (Normal)", 
-            "1 Player (Hard)",
+            "1 Player",
             "2 Player",
+            "Options",
             "Quit"
         ]
         
@@ -125,34 +126,18 @@ class MenuScene(Scene):
     
     def _select_option(self):
         logger.debug("Selected option %d", self.selected_option)
-        if self.selected_option == 0:  # 1 Player (Easy)
-            logger.debug("Creating game scene with AI opponent (Easy)")
+        if self.selected_option == 0:  # 1 Player
+            options_manager = OptionsManager.get_instance()
+            ai_difficulty = options_manager.get_ai_difficulty()
+            logger.debug("Creating game scene with AI opponent (%s)", ai_difficulty)
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
-                                  ai_enabled=True, ai_difficulty='easy',
+                                  ai_enabled=True, ai_difficulty=ai_difficulty,
                                   screenshot_manager=self.screenshot_manager,
                                   achievement_manager=self.achievement_manager,
                                   asset_manager=self.asset_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
-        elif self.selected_option == 1:  # 1 Player (Normal)
-            logger.debug("Creating game scene with AI opponent (Normal)")
-            game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
-                                  ai_enabled=True, ai_difficulty='normal',
-                                  screenshot_manager=self.screenshot_manager,
-                                  achievement_manager=self.achievement_manager,
-                                  asset_manager=self.asset_manager)
-            logger.debug("Changing to game scene")
-            self.scene_manager.change_scene(game_scene)
-        elif self.selected_option == 2:  # 1 Player (Hard)
-            logger.debug("Creating game scene with AI opponent (Hard)")
-            game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
-                                  ai_enabled=True, ai_difficulty='hard',
-                                  screenshot_manager=self.screenshot_manager,
-                                  achievement_manager=self.achievement_manager,
-                                  asset_manager=self.asset_manager)
-            logger.debug("Changing to game scene")
-            self.scene_manager.change_scene(game_scene)
-        elif self.selected_option == 3:  # 2 Player
+        elif self.selected_option == 1:  # 2 Player
             logger.debug("Creating game scene for 2 players")
             game_scene = GameScene(self.scene_manager, self.renderer, self.audio_manager, 
                                   ai_enabled=False, screenshot_manager=self.screenshot_manager,
@@ -160,7 +145,16 @@ class MenuScene(Scene):
                                   asset_manager=self.asset_manager)
             logger.debug("Changing to game scene")
             self.scene_manager.change_scene(game_scene)
-        elif self.selected_option == 4:  # Quit
+        elif self.selected_option == 2:  # Options
+            logger.debug("Opening options screen")
+            options_scene = OptionsScene(
+                self.scene_manager, self.renderer,
+                self.audio_manager, self.screenshot_manager,
+                fps_counter=None  # FPS counter not accessible from menu
+            )
+            self.scene_manager.push_scene(options_scene)
+            logger.debug("Options screen opened")
+        elif self.selected_option == 3:  # Quit
             logger.debug("Clearing scenes (quit)")
             self.scene_manager.clear_scenes()
     
@@ -259,7 +253,7 @@ class MenuScene(Scene):
         option_y = 350
         for i, option in enumerate(self.options):
             color = COLOR_YELLOW if i == self.selected_option else COLOR_CYAN
-            y = option_y + i * 70
+            y = option_y + i * 80
             self.renderer.draw_text(option, WINDOW_WIDTH // 2, y, FONT_SIZE_MEDIUM, color, centered=True)
         
         # Draw controls
@@ -267,9 +261,11 @@ class MenuScene(Scene):
         self.renderer.draw_text("Player 1: W/S", 100, controls_y, FONT_SIZE_SMALL, COLOR_CYAN, font_name="sys:arial")
         
         # Show different text based on selected option
-        if self.selected_option in [0, 1, 2]:  # 1 Player modes
+        if self.selected_option == 0:  # 1 Player
             self.renderer.draw_text("Player 2: AI", WINDOW_WIDTH - 250, controls_y, FONT_SIZE_SMALL, COLOR_PINK, font_name="sys:arial")
-        else:  # 2 Player mode or Quit
+        elif self.selected_option == 1:  # 2 Player
             self.renderer.draw_text("Player 2: UP/DOWN", WINDOW_WIDTH - 300, controls_y, FONT_SIZE_SMALL, COLOR_PINK, font_name="sys:arial")
+        else:  # Options or Quit
+            self.renderer.draw_text("", WINDOW_WIDTH - 250, controls_y, FONT_SIZE_SMALL, COLOR_PINK, font_name="sys:arial")
         
         self.renderer.end_frame()

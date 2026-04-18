@@ -7,11 +7,13 @@ import moderngl
 from src.managers.scene_manager import SceneManager
 from src.managers.asset_manager import AssetManager
 from src.managers.shader_manager import ShaderManager
+from src.managers.options_manager import OptionsManager
 from src.rendering.renderer import Renderer
 from src.managers.audio_manager import AudioManager
 from src.scenes.menu_scene import MenuScene
 from src.scenes.help_scene import HelpScene
 from src.scenes.achievement_scene import AchievementScene
+from src.scenes.options_scene import OptionsScene
 from src.managers.achievement_manager import AchievementManager
 from src.rendering.achievement_toast import AchievementToast
 from src.utils.fps_counter import FPSCounter
@@ -88,6 +90,8 @@ class Game:
         
         logger.debug("Initializing shader manager")
         self.shader_manager = ShaderManager(self.ctx)
+        logger.debug("Initializing options manager")
+        self.options_manager = OptionsManager.get_instance()
         logger.debug("Initializing audio manager")
         self.audio_manager = AudioManager(self.asset_manager)
         
@@ -268,8 +272,19 @@ class Game:
                 elif event.key == pygame.K_F3:
                     # Toggle FPS display
                     self.fps_counter.toggle_visibility()
+                    self.options_manager.set_fps_display(self.fps_counter.is_visible())
                     status = "enabled" if self.fps_counter.is_visible() else "disabled"
                     logger.debug("FPS display %s", status)
+                elif event.key == pygame.K_F4:
+                    # Show options screen - prevent stacking
+                    if not isinstance(self.scene_manager.current_scene, OptionsScene):
+                        options_scene = OptionsScene(
+                            self.scene_manager, self.renderer,
+                            self.audio_manager, self.screenshot_manager,
+                            self.fps_counter
+                        )
+                        self.scene_manager.push_scene(options_scene)
+                        logger.debug("Options screen opened")
                 elif event.key == pygame.K_s and (event.mod & pygame.KMOD_CTRL):
                     # Schedule screenshot capture after frame completes
                     self.pending_screenshot = True
@@ -294,7 +309,10 @@ class Game:
                     self.audio_manager.adjust_sfx_volume(0.1)
                 elif event.key == pygame.K_EQUALS:
                     # Toggle scanlines post-processing effect
-                    self.renderer.toggle_scanlines()
+                    enabled = self.renderer.toggle_scanlines()
+                    # Update options manager to reflect the change
+                    new_effect = "scanlines" if enabled else "none"
+                    self.options_manager.set_post_effect(new_effect)
                 elif self.scene_manager.current_scene:
                     self.scene_manager.current_scene.handle_event(event)
             elif self.scene_manager.current_scene:

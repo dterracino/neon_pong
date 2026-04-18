@@ -34,6 +34,7 @@ HELP_SECTIONS = [
         ("F1",              "Help screen (this screen)"),
         ("F2",              "Achievement browser"),
         ("F3",              "Toggle FPS counter"),
+        ("F4",              "Options menu"),
         ("=",               "Toggle scanlines"),
         ("Ctrl + S",        "Save screenshot"),
     ]),

@@ -246,3 +246,50 @@ class PostProcessor:
         self.scanlines_enabled = not self.scanlines_enabled
         logger.debug("Scanlines %s", "enabled" if self.scanlines_enabled else "disabled")
         return self.scanlines_enabled
+
+    def reload_effect_shader(self):
+        """Reload the post-processing effect shader based on current POST_EFFECT_TYPE setting."""
+        from src.utils.constants import POST_EFFECT_TYPE
+        
+        logger.debug("Reloading style effect shader (%s)", POST_EFFECT_TYPE)
+        
+        # Release old resources if they exist
+        if hasattr(self, 'style_effect_vao') and self.style_effect_vao:
+            self.style_effect_vao.release()
+            self.style_effect_vao = None
+        if hasattr(self, 'style_effect_texture') and self.style_effect_texture:
+            self.style_effect_texture.release()
+            self.style_effect_texture = None
+        if hasattr(self, 'style_effect_fbo') and self.style_effect_fbo:
+            self.style_effect_fbo.release()
+            self.style_effect_fbo = None
+        
+        # Clear old program reference
+        self.style_effect_program = None
+        self.style_effect_enabled = POST_EFFECT_TYPE != "none"
+        
+        # Load new effect shader
+        if POST_EFFECT_TYPE == "scanlines":
+            self.style_effect_program = self.shader_manager.load_shader(
+                'style_scanlines', 'basic.vert', 'scanlines.frag'
+            )
+        elif POST_EFFECT_TYPE == "crt":
+            self.style_effect_program = self.shader_manager.load_shader(
+                'style_crt', 'basic.vert', 'crt.frag'
+            )
+        elif POST_EFFECT_TYPE == "vhs":
+            self.style_effect_program = self.shader_manager.load_shader(
+                'style_vhs', 'basic.vert', 'vhs.frag'
+            )
+        
+        # Create new VAO and textures if we have a program
+        if self.style_effect_program:
+            self.style_effect_vao = self.ctx.simple_vertex_array(
+                self.style_effect_program, self.quad_vbo, 'in_position'
+            )
+            self.style_effect_texture = self.ctx.texture((WINDOW_WIDTH, WINDOW_HEIGHT), 4, dtype='f4')
+            self.style_effect_fbo = self.ctx.framebuffer(color_attachments=[self.style_effect_texture])
+            logger.debug("Style effect shader reloaded successfully")
+        else:
+            self.style_effect_enabled = False
+            logger.debug("No style effect enabled")
