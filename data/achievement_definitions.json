@@ -4,7 +4,8 @@
     "name": "First Blood",
     "description": "Score your very first point.",
     "type": "MILESTONE",
-    "trigger": "point_scored"
+    "trigger": "point_scored",
+    "conditions": { "scorer": 1 }
   },
   {
     "id": "winner",

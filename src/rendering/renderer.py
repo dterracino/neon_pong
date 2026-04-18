@@ -384,6 +384,31 @@ class Renderer:
 
         self.ctx.disable(moderngl.BLEND)
 
+    def draw_fullscreen_overlay(self, color: Tuple[float, float, float, float]):
+        """
+        Draw a fullscreen overlay with alpha blending.
+        Used for transitions and other screen effects.
+        Must be called AFTER end_frame().
+        
+        Args:
+            color: RGBA color tuple (0.0-1.0 range)
+        """
+        if color[3] <= 0.0:
+            return  # Skip if fully transparent
+        
+        # Enable blending for overlay
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+        
+        # Draw fullscreen quad with color
+        self.white_texture.use(0)
+        self.basic_program['tex'] = 0
+        self.basic_program['color'] = color
+        self.quad_vao.render(moderngl.TRIANGLE_STRIP)
+        
+        # Disable blending when done
+        self.ctx.disable(moderngl.BLEND)
+
     def draw_rect(self, x: float, y: float, width: float, height: float, color: Tuple[float, float, float, float]):
         """Draw a filled rectangle"""
         # Apply screen shake offset

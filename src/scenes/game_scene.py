@@ -19,6 +19,7 @@ from src.ai.pong_ai import PongAI
 from src.utils.game_time import GameTime
 from src.utils.impact_effects import ImpactEffectsSystem
 from src.utils.ai_indicator import AIThinkingIndicator
+from src.utils.tweening import ease_elastic_out
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -32,6 +33,10 @@ logger = logging.getLogger(__name__)
 
 class GameScene(Scene):
     """Main game scene"""
+    
+    # Transition hints - game fades in/out
+    preferred_transition_in = "fade_to_black"
+    preferred_transition_out = "fade_to_black"
     
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager, 
                  ai_enabled: bool = False, ai_difficulty: str = 'normal',
@@ -184,15 +189,17 @@ class GameScene(Scene):
         if self.score1_anim_timer > 0:
             self.score1_anim_timer -= dt
             # Elastic ease out: scale from 1.5 to 1.0
-            progress = 1.0 - (self.score1_anim_timer / 0.3)  # 0.3s animation
-            self.score1_scale = 1.0 + 0.5 * (1.0 - progress) ** 2
+            progress = 1.0 - (self.score1_anim_timer / 0.5)  # 0.5s animation
+            eased = ease_elastic_out(progress)
+            self.score1_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
         else:
             self.score1_scale = 1.0
         
         if self.score2_anim_timer > 0:
             self.score2_anim_timer -= dt
-            progress = 1.0 - (self.score2_anim_timer / 0.3)
-            self.score2_scale = 1.0 + 0.5 * (1.0 - progress) ** 2
+            progress = 1.0 - (self.score2_anim_timer / 0.5)
+            eased = ease_elastic_out(progress)
+            self.score2_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
         else:
             self.score2_scale = 1.0
         
@@ -281,7 +288,7 @@ class GameScene(Scene):
                 self.score1 += 1
                 # Trigger score animation
                 self.score1_scale = 1.5
-                self.score1_anim_timer = 0.3
+                self.score1_anim_timer = 0.5
                 
                 # In 1P mode, player scored - add particles
                 # In 2P mode, player 1 scored - add particles
@@ -301,7 +308,7 @@ class GameScene(Scene):
                 self.score2 += 1
                 # Trigger score animation
                 self.score2_scale = 1.5
-                self.score2_anim_timer = 0.3
+                self.score2_anim_timer = 0.5
                 
                 if self.ai_enabled:
                     # 1P mode: AI scored, add dramatic screen shake instead of particles
@@ -419,16 +426,23 @@ class GameScene(Scene):
         # Fire point_scored event — manager resolves all MILESTONE achievements
         am.trigger('point_scored', {'scorer': scorer})
 
-        # Lifetime totals
-        am.increment('total_points')
+        # Lifetime totals - only count player 1's points
+        if scorer == 1:
+            am.increment('total_points')
 
-        # Hat Trick: STREAK achievement — increment when same player scores again, reset on change
-        if scorer == self._consecutive_scored_by:
-            am.increment('consecutive_scored')
+        # Hat Trick: STREAK achievement — only count player 1's consecutive scores
+        if scorer == 1:
+            if scorer == self._consecutive_scored_by:
+                am.increment('consecutive_scored')
+            else:
+                self._consecutive_scored_by = scorer
+                am.reset_stat('consecutive_scored')
+                am.increment('consecutive_scored')  # this point starts the new streak
         else:
-            self._consecutive_scored_by = scorer
-            am.reset_stat('consecutive_scored')
-            am.increment('consecutive_scored')  # this point starts the new streak
+            # AI/Player 2 scored, reset the streak
+            if self._consecutive_scored_by != scorer:
+                self._consecutive_scored_by = scorer
+                am.reset_stat('consecutive_scored')
 
     def _check_win_achievements(self, winner: int):
         """Called when the game ends.  winner is 1 or 2."""

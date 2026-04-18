@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 class MenuScene(Scene):
     """Main menu scene"""
     
+    # Transition hints - menu fades to black when leaving
+    preferred_transition_out = "fade_to_black"
+    preferred_transition_in = "fade_to_black"
+    
     def __init__(self, scene_manager, renderer: Renderer, audio_manager: AudioManager,
                  screenshot_manager=None, achievement_manager=None, asset_manager=None):
         logger.debug("Creating menu scene")

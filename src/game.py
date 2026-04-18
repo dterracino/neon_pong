@@ -195,6 +195,9 @@ class Game:
             # Update renderer time for animated backgrounds
             self.renderer.update_time(self.dt)
             
+            # Update scene manager (handles transitions)
+            self.scene_manager.update(self.dt)
+            
             # Update current scene
             if self.scene_manager.current_scene:
                 if frame_count < 5:
@@ -206,6 +209,9 @@ class Game:
                 if frame_count < 5:
                     logger.debug("Rendering scene: %s", type(self.scene_manager.current_scene).__name__)
                 self.scene_manager.current_scene.render()
+            
+            # Render transition overlay (if active)
+            self.scene_manager.render_transition(self.renderer)
             
             # Render FPS display if enabled
             if self.fps_counter.is_visible():
