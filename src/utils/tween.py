@@ -133,6 +133,9 @@ class Tween:
                 self.on_update(self.end)
             if self.on_complete:
                 self.on_complete()
+        else:
+            if self.on_update:
+                self.on_update(self.value)
 
     @property
     def value(self) -> float:

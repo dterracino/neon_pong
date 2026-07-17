@@ -70,11 +70,9 @@ class TweenManager:
         return tween
 
     def update(self, dt: float) -> None:
-        """Update all non-paused tweens and call on_update for running ones"""
+        """Update all non-paused tweens (on_update callbacks are fired within each Tween)"""
         for tween in self.tweens:
             tween.update(dt)
-            if tween.on_update and tween.status == TweenStatus.RUNNING:
-                tween.on_update(tween.value)
 
         # Remove finished tweens
         self.tweens = [

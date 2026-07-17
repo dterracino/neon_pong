@@ -18,6 +18,8 @@ from src.utils.constants import (
     FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL,
     MENU_COMET_COUNT
 )
+from src.utils.easings import EaseType
+from src.utils.tween_manager import TweenManager
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +51,20 @@ class MenuScene(Scene):
         ]
         
         # Animation state
-        self.slide_in_timer = 0.0  # Tracks slide-in animation
-        self.slide_in_duration = 0.5  # Duration of slide-in in seconds
-        self.slide_out_timer = 0.0  # Tracks slide-out animation when quitting
-        self.slide_out_duration = 0.5  # Duration of slide-out
-        self.is_quitting = False  # True when quit selected and animating out
-        self.pulse_timer = 0.0  # For pulsing selected item
-        self.menu_item_offsets = [0.0] * len(self.options)  # X offset for each item
-        self.menu_item_scales = [1.0] * len(self.options)  # Scale for each item
+        self.is_quitting = False
+        self.pulse_timer = 0.0
+        self.menu_item_offsets = [0.0] * len(self.options)
+        self.menu_item_scales = [1.0] * len(self.options)
+
+        # Tween manager for slide-in / slide-out
+        self.menu_tween_manager = TweenManager()
+        for i in range(len(self.options)):
+            direction = 1 if i % 2 == 0 else -1
+            self.menu_tween_manager.add_tween(
+                direction * 800, 0, 0.5, EaseType.CUBIC_OUT,
+                tag="slide_in",
+                on_update=lambda v, idx=i: self.menu_item_offsets.__setitem__(idx, v)
+            )
         
         # Create enhanced particle system for menu effects
         self.menu_particles = EnhancedParticleSystem()
@@ -171,43 +179,28 @@ class MenuScene(Scene):
         elif self.selected_option == 3:  # Quit
             logger.debug("Starting quit animation")
             self.is_quitting = True
-            self.slide_out_timer = 0.0
+            self.menu_tween_manager.cancel_tag("slide_in")
+            for i in range(len(self.options)):
+                direction = 1 if i % 2 == 0 else -1
+                self.menu_tween_manager.add_tween(
+                    self.menu_item_offsets[i], direction * 800, 0.5, EaseType.CUBIC_IN,
+                    tag="slide_out",
+                    on_update=lambda v, idx=i: self.menu_item_offsets.__setitem__(idx, v)
+                )
     
     def update(self, dt: float):
         # Update particle system
         self.menu_particles.update(dt)
 
+        # Update menu item tweens (slide-in / slide-out)
+        self.menu_tween_manager.update(dt)
+
         # Handle quit animation
         if self.is_quitting:
-            self.slide_out_timer = min(self.slide_out_timer + dt, self.slide_out_duration)
-            
-            # Calculate slide-out progress with easing (ease-in cubic)
-            progress = self.slide_out_timer / self.slide_out_duration
-            eased_progress = progress ** 3
-            
-            # Slide items back out the way they came
-            for i in range(len(self.options)):
-                direction = 1 if i % 2 == 0 else -1  # Even to left, odd to right
-                self.menu_item_offsets[i] = eased_progress * direction * 800
-            
-            # When animation complete, quit
-            if self.slide_out_timer >= self.slide_out_duration:
+            if self.menu_tween_manager.active_count == 0:
                 logger.debug("Slide-out complete, clearing scenes")
                 self.scene_manager.clear_scenes()
             return  # Skip other updates during quit animation
-
-        # Update slide-in animation
-        if self.slide_in_timer < self.slide_in_duration:
-            self.slide_in_timer = min(self.slide_in_timer + dt, self.slide_in_duration)
-            
-            # Calculate slide progress with easing (ease-out cubic)
-            progress = self.slide_in_timer / self.slide_in_duration
-            eased_progress = 1.0 - (1.0 - progress) ** 3
-            
-            # Alternate items slide from left and right
-            for i in range(len(self.options)):
-                direction = 1 if i % 2 == 0 else -1  # Even from left, odd from right
-                self.menu_item_offsets[i] = (1.0 - eased_progress) * direction * 800
         
         # Update pulse animation for selected item
         self.pulse_timer += dt

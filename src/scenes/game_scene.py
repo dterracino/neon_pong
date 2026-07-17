@@ -19,7 +19,8 @@ from src.ai.pong_ai import PongAI
 from src.utils.game_time import GameTime
 from src.utils.impact_effects import ImpactEffectsSystem
 from src.utils.ai_indicator import AIThinkingIndicator
-from src.utils.easings import EaseType, EASING_FUNCTIONS
+from src.utils.easings import EaseType
+from src.utils.tween import Tween
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -109,9 +110,9 @@ class GameScene(Scene):
         
         # Score animation state
         self.score1_scale = 1.0
-        self.score1_anim_timer = 0.0
+        self.score1_tween: Optional[Tween] = None
         self.score2_scale = 1.0
-        self.score2_anim_timer = 0.0
+        self.score2_tween: Optional[Tween] = None
         
         # Game state
         self.game_over = False
@@ -186,22 +187,10 @@ class GameScene(Scene):
             self.ai_indicator.update(dt)
         
         # Update score animations
-        if self.score1_anim_timer > 0:
-            self.score1_anim_timer -= dt
-            # Elastic ease out: scale from 1.5 to 1.0
-            progress = 1.0 - (self.score1_anim_timer / 0.5)  # 0.5s animation
-            eased = EASING_FUNCTIONS[EaseType.ELASTIC_OUT](progress)
-            self.score1_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
-        else:
-            self.score1_scale = 1.0
-        
-        if self.score2_anim_timer > 0:
-            self.score2_anim_timer -= dt
-            progress = 1.0 - (self.score2_anim_timer / 0.5)
-            eased = EASING_FUNCTIONS[EaseType.ELASTIC_OUT](progress)
-            self.score2_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
-        else:
-            self.score2_scale = 1.0
+        if self.score1_tween:
+            self.score1_tween.update(dt)
+        if self.score2_tween:
+            self.score2_tween.update(dt)
         
         # Handle wall collision
         if collision == 'wall':
@@ -287,8 +276,8 @@ class GameScene(Scene):
                 score_color = COLOR_CYAN
                 self.score1 += 1
                 # Trigger score animation
-                self.score1_scale = 1.5
-                self.score1_anim_timer = 0.5
+                self.score1_tween = Tween(1.5, 1.0, 0.5, EaseType.ELASTIC_OUT,
+                                          on_update=lambda v: setattr(self, 'score1_scale', v))
                 
                 # In 1P mode, player scored - add particles
                 # In 2P mode, player 1 scored - add particles
@@ -307,8 +296,8 @@ class GameScene(Scene):
                 score_color = COLOR_PINK
                 self.score2 += 1
                 # Trigger score animation
-                self.score2_scale = 1.5
-                self.score2_anim_timer = 0.5
+                self.score2_tween = Tween(1.5, 1.0, 0.5, EaseType.ELASTIC_OUT,
+                                          on_update=lambda v: setattr(self, 'score2_scale', v))
                 
                 if self.ai_enabled:
                     # 1P mode: AI scored, add dramatic screen shake instead of particles
