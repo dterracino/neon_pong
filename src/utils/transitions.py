@@ -3,7 +3,7 @@ Scene transition effects system
 """
 import logging
 from typing import Optional, Callable
-from src.utils.tweening import ease_cubic_in_out
+from src.utils.easings import EaseType, EASING_FUNCTIONS
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 logger = logging.getLogger(__name__)
@@ -105,12 +105,12 @@ class FadeToBlackTransition(Transition):
         if self.phase == "out":
             # Fade to black: 0.0 -> 1.0
             progress = self.elapsed / self.fade_out_duration
-            eased = ease_cubic_in_out(min(1.0, progress))
+            eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](min(1.0, progress))
             return eased
         else:
             # Fade from black: 1.0 -> 0.0
             progress = (self.elapsed - self.fade_out_duration) / self.fade_in_duration
-            eased = ease_cubic_in_out(min(1.0, progress))
+            eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](min(1.0, progress))
             return 1.0 - eased
     
     def render_overlay(self, renderer):
@@ -148,7 +148,7 @@ class CrossfadeTransition(Transition):
         progress = self.get_progress()
         
         # Ease the alpha transition
-        eased = ease_cubic_in_out(progress)
+        eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](progress)
         self.old_scene_alpha = 1.0 - eased
         self.new_scene_alpha = eased
         

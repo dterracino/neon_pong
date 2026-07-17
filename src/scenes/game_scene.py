@@ -19,7 +19,7 @@ from src.ai.pong_ai import PongAI
 from src.utils.game_time import GameTime
 from src.utils.impact_effects import ImpactEffectsSystem
 from src.utils.ai_indicator import AIThinkingIndicator
-from src.utils.tweening import ease_elastic_out
+from src.utils.easings import EaseType, EASING_FUNCTIONS
 from src.utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, PADDLE_OFFSET,
     WINNING_SCORE, PARTICLE_COUNT, PARTICLE_LIFETIME,
@@ -190,7 +190,7 @@ class GameScene(Scene):
             self.score1_anim_timer -= dt
             # Elastic ease out: scale from 1.5 to 1.0
             progress = 1.0 - (self.score1_anim_timer / 0.5)  # 0.5s animation
-            eased = ease_elastic_out(progress)
+            eased = EASING_FUNCTIONS[EaseType.ELASTIC_OUT](progress)
             self.score1_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
         else:
             self.score1_scale = 1.0
@@ -198,7 +198,7 @@ class GameScene(Scene):
         if self.score2_anim_timer > 0:
             self.score2_anim_timer -= dt
             progress = 1.0 - (self.score2_anim_timer / 0.5)
-            eased = ease_elastic_out(progress)
+            eased = EASING_FUNCTIONS[EaseType.ELASTIC_OUT](progress)
             self.score2_scale = 1.5 - 0.5 * eased  # 1.5 down to 1.0 with bounce
         else:
             self.score2_scale = 1.0
