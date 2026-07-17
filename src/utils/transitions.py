@@ -3,7 +3,8 @@ Scene transition effects system
 """
 import logging
 from typing import Optional, Callable
-from src.utils.easings import EaseType, EASING_FUNCTIONS
+from src.utils.easings import EaseType
+from src.utils.tween import Tween
 from src.utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 logger = logging.getLogger(__name__)
@@ -81,43 +82,35 @@ class FadeToBlackTransition(Transition):
         self.fade_out_duration = fade_out_duration
         self.fade_in_duration = fade_in_duration
         self.scene_switched = False
+
+        self._fade_out = Tween(0.0, 1.0, fade_out_duration, EaseType.CUBIC_IN_OUT)
+        self._fade_in  = Tween(1.0, 0.0, fade_in_duration,  EaseType.CUBIC_IN_OUT)
     
     def update(self, dt: float) -> bool:
         """Update transition and check for scene switch"""
-        self.elapsed += dt
-        
-        # Check if we should switch scenes (at end of fade-out)
-        if not self.scene_switched and self.elapsed >= self.fade_out_duration:
-            logger.debug("Fade-out complete (%.3fs), invoking mid-transition callback", self.elapsed)
-            self.scene_switched = True
-            self.phase = "in"
-            if self.on_mid_transition:
-                self.on_mid_transition()
-        
-        if self.elapsed >= self.duration:
-            self.is_complete = True
-            return True
-        
+        if not self.scene_switched:
+            self._fade_out.update(dt)
+            if self._fade_out.is_complete:
+                logger.debug("Fade-out complete, invoking mid-transition callback")
+                self.scene_switched = True
+                self.phase = "in"
+                if self.on_mid_transition:
+                    self.on_mid_transition()
+        else:
+            self._fade_in.update(dt)
+            if self._fade_in.is_complete:
+                self.is_complete = True
+                return True
         return False
     
     def get_alpha(self) -> float:
         """Get current overlay alpha (0.0 = transparent, 1.0 = opaque)"""
-        if self.phase == "out":
-            # Fade to black: 0.0 -> 1.0
-            progress = self.elapsed / self.fade_out_duration
-            eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](min(1.0, progress))
-            return eased
-        else:
-            # Fade from black: 1.0 -> 0.0
-            progress = (self.elapsed - self.fade_out_duration) / self.fade_in_duration
-            eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](min(1.0, progress))
-            return 1.0 - eased
+        return self._fade_out.value if not self.scene_switched else self._fade_in.value
     
     def render_overlay(self, renderer):
         """Render black overlay with current alpha"""
         alpha = self.get_alpha()
         if alpha > 0.0:
-            # Draw full-screen black overlay
             renderer.draw_fullscreen_overlay((0.0, 0.0, 0.0, alpha))
 
 
@@ -132,38 +125,36 @@ class CrossfadeTransition(Transition):
             duration: Duration of crossfade (seconds)
         """
         super().__init__(duration)
-        self.old_scene_alpha = 1.0
-        self.new_scene_alpha = 0.0
         self.scene_switched = False
+        self._tween = Tween(0.0, 1.0, duration, EaseType.CUBIC_IN_OUT)
     
     def update(self, dt: float) -> bool:
         """Update crossfade progress"""
-        # Switch scene immediately at start
         if not self.scene_switched:
             self.scene_switched = True
             if self.on_mid_transition:
                 self.on_mid_transition()
         
-        self.elapsed += dt
-        progress = self.get_progress()
-        
-        # Ease the alpha transition
-        eased = EASING_FUNCTIONS[EaseType.CUBIC_IN_OUT](progress)
-        self.old_scene_alpha = 1.0 - eased
-        self.new_scene_alpha = eased
-        
-        if self.elapsed >= self.duration:
+        self._tween.update(dt)
+        if self._tween.is_complete:
             self.is_complete = True
             return True
-        
         return False
-    
+
+    @property
+    def old_scene_alpha(self) -> float:
+        """Alpha for the outgoing scene"""
+        return 1.0 - self._tween.value
+
+    @property
+    def new_scene_alpha(self) -> float:
+        """Alpha for the incoming scene"""
+        return self._tween.value
+
     def get_old_scene_alpha(self) -> float:
-        """Get alpha for old scene"""
         return self.old_scene_alpha
-    
+
     def get_new_scene_alpha(self) -> float:
-        """Get alpha for new scene"""
         return self.new_scene_alpha
 
 

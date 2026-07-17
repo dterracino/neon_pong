@@ -25,6 +25,16 @@ class Tween:
 
         tween.update(dt)
         current_value = tween.value
+
+    Planned additions:
+        loop (bool): When True, the tween repeats after completing. Controlled by repeat_count.
+        ping_pong (bool): Modifier for loop=True — instead of restarting from start, the tween
+            reverses direction on each repetition (start→end, end→start, start→end, ...).
+        repeat_count (int): How many times to repeat when loop=True. -1 means infinite.
+            Ignored when loop=False.
+        on_repeat (Callable): Fired at the end of each repetition, before the next one begins.
+            Fires for both loop and ping_pong modes. on_complete only fires when all repetitions
+            are exhausted (or the tween is cancelled).
     """
 
     def __init__(self, start: float, end: float, duration: float,
