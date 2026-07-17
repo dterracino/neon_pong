@@ -200,7 +200,7 @@ class Renderer:
         self.time = 0.0
         
         # Cache management
-        self.max_cache_size = 100  # Maximum number of cached text items
+        self.max_cache_size = 300  # Maximum number of cached text items
         self.cache_access_count: Dict[tuple, int] = {}  # Track access frequency
 
         # Screen shake system
