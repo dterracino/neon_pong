@@ -68,6 +68,10 @@ class EaseType(Enum):
     BOUNCE_OUT = "bounce_out"
     BOUNCE_IN_OUT = "bounce_in_out"
 
+    # Smooth (perlin-style, no in/out variants — symmetric by nature)
+    SMOOTH_STEP   = "smooth_step"    # 3t² - 2t³  — zero velocity at both endpoints
+    SMOOTHER_STEP = "smoother_step"  # 6t⁵ - 15t⁴ + 10t³ — zero velocity AND acceleration at both endpoints
+
 
 # ==================== LINEAR ====================
 def _ease_linear(t: float) -> float:
@@ -256,6 +260,19 @@ def _ease_bounce_in_out(t: float) -> float:
     return _ease_bounce_out(t * 2 - 1) * 0.5 + 0.5
 
 
+# ==================== SMOOTH ====================
+def _ease_smooth_step(t: float) -> float:
+    """Ken Perlin's smoothstep: 3t² - 2t³. Zero first derivative at t=0 and t=1."""
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _ease_smoother_step(t: float) -> float:
+    """Ken Perlin's smootherstep: 6t⁵ - 15t⁴ + 10t³. Zero first and second derivative at t=0 and t=1."""
+    t = max(0.0, min(1.0, t))
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+
+
 # Map easing types to functions — the public interface for accessing easing functions
 EASING_FUNCTIONS: dict[EaseType, Callable[[float], float]] = {
     EaseType.LINEAR: _ease_linear,
@@ -299,6 +316,9 @@ EASING_FUNCTIONS: dict[EaseType, Callable[[float], float]] = {
     EaseType.BOUNCE_IN: _ease_bounce_in,
     EaseType.BOUNCE_OUT: _ease_bounce_out,
     EaseType.BOUNCE_IN_OUT: _ease_bounce_in_out,
+
+    EaseType.SMOOTH_STEP:   _ease_smooth_step,
+    EaseType.SMOOTHER_STEP: _ease_smoother_step,
 }
 
 

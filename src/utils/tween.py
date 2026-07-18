@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Callable, Optional
 
 from src.utils.easings import EaseType, get_easing_function
+from src.utils.property_binding import PropertyBinding
 
 
 class TweenStatus(Enum):
@@ -163,6 +164,33 @@ class Tween:
         t = min(active_elapsed / self.duration, 1.0)
         eased_t = self.easing_func(t)
         return self.start + (self.end - self.start) * eased_t
+
+    # ------------------------------------------------------------------
+    # Factory
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def bind(cls, binding: PropertyBinding, end: float, duration: float,
+             ease_type: EaseType = EaseType.LINEAR, **kwargs) -> 'Tween':
+        """
+        Create a tween bound to a property.
+
+        Reads the property's current value as the start point automatically,
+        and writes the interpolated value back each frame via the binding.
+
+        Args:
+            binding: A PropertyBinding describing the property to animate.
+            end: Target value to animate toward.
+            duration: Duration in seconds.
+            ease_type: Easing function to apply.
+            **kwargs: Additional Tween constructor arguments (on_complete, delay, tag, etc.)
+
+        Example:
+            Tween.bind(PropertyBinding.for_attribute(self, 'opacity'), 1.0, 0.3)
+        """
+        return cls(binding.get(), end, duration, ease_type,
+                   on_update=binding.set,
+                   **kwargs)
 
     @property
     def progress(self) -> float:
